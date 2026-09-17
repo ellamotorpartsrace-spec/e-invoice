@@ -1,0 +1,25 @@
+# .htaccess — Standalone Shopee E-Invoice Portal
+# Compatible with Hostinger Apache and LiteSpeed Web Servers
+
+Options -Indexes
+ServerSignature Off
+
+# Prevent access to sensitive files
+<FilesMatch "^\.(git|env|htaccess)|(schema\.sql|install\.php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect storage directory from raw directory crawling
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^storage/invoices/(.*\.pdf)$ api/download.php?file=$1 [L,QSA]
+</IfModule>
+
+# Increase upload limits for large Excel files
+<IfModule mod_php.c>
+    php_value upload_max_filesize 25M
+    php_value post_max_size 30M
+    php_value max_execution_time 300
+    php_value memory_limit 256M
+</IfModule>

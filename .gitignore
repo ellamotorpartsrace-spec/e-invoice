@@ -1,0 +1,7 @@
+storage/invoices/*.pdf
+!storage/invoices/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep
+*.xlsx
+.DS_Store
+*.log
