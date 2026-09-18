@@ -13,6 +13,7 @@ ServerSignature Off
 # Protect storage directory from raw directory crawling
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteCond %{REQUEST_URI} !test_preview/
     RewriteRule ^storage/invoices/(.*\.pdf)$ api/download.php?file=$1 [L,QSA]
 </IfModule>
 

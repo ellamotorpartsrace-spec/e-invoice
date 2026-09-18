@@ -14,7 +14,7 @@ $pageTitle = $pageTitle ?? 'Electronic Invoicing Portal';
     <title><?= htmlspecialchars($pageTitle) ?> — E-Invoice Management Portal</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/img/logo-mark.png">
+    <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/img/logo-mark.png?v=<?= file_exists(__DIR__ . '/../assets/img/logo-mark.png') ? filemtime(__DIR__ . '/../assets/img/logo-mark.png') : '2.0' ?>">
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

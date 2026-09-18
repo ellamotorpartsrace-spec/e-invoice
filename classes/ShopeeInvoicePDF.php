@@ -1,8 +1,8 @@
 <?php
 // classes/ShopeeInvoicePDF.php
 // Multi-Platform E-Commerce BIR Annex A1 Compliant Sales Invoice Generator
-// Compatible with Shopee, Lazada, and TikTok Shop
-// Output: Vector-crisp, strictly BIR-compliant, visually stunning 1-page PDF
+// Fully customized for Shopee, Lazada, and TikTok Shop with dedicated brand themes,
+// balanced A4 page layout, zero text-clipping, and BIR Annex A1 & RR 7-2024 compliance.
 
 require_once __DIR__ . '/fpdf/fpdf.php';
 
@@ -10,13 +10,133 @@ class ShopeeInvoicePDF extends FPDF {
 
     protected $storeInfo = [];
     protected $invoiceData = [];
+    protected $theme = [];
 
     public function __construct($storeInfo, $invoiceData) {
         parent::__construct('P', 'mm', 'A4'); // 210 x 297 mm
+        // Smart parameter swap protection if caller passes ($invoiceData, $storeInfo)
+        if (isset($storeInfo['order_sn']) && !isset($invoiceData['order_sn'])) {
+            $temp = $storeInfo;
+            $storeInfo = $invoiceData;
+            $invoiceData = $temp;
+        }
+
         $this->storeInfo = $storeInfo;
         $this->invoiceData = $invoiceData;
         $this->SetAutoPageBreak(false); // Strictly 1-page controlled layout
-        $this->SetMargins(15, 10, 15);
+        $this->SetMargins(14, 12, 14);
+
+        $platform = !empty($this->invoiceData['platform_name']) ? $this->invoiceData['platform_name'] : (!empty($this->invoiceData['platform']) ? $this->invoiceData['platform'] : 'Shopee');
+        $this->theme = $this->resolvePlatformTheme($platform);
+    }
+
+    /**
+     * Platform theme resolution
+     * Provides dedicated palettes and styling tokens for Shopee, Lazada, and TikTok Shop.
+     */
+    protected function resolvePlatformTheme($platformName) {
+        $p = strtolower(trim((string)$platformName));
+
+        // ── LAZADA THEME (Electric Royal Blue, Magenta Accents, Ice Blue Tints) ──
+        if (strpos($p, 'laz') !== false) {
+            return [
+                'platform_key'  => 'lazada',
+                'display_name'  => 'Lazada',
+                'badge_label'   => '[ LAZADA VERIFIED STORE ORDER ]',
+                'order_label'   => 'LAZADA ORDER NO: ',
+                'primary'       => [15, 86, 250],    // #0F56FA - Lazada Royal Blue
+                'primary_dark'  => [10, 59, 179],   // #0A3BB3
+                'accent'        => [243, 0, 103],   // #F30067 - Lazada Magenta
+                'accent_light'  => [254, 230, 240], // Soft magenta tint
+                'heading_dark'  => [11, 25, 44],    // #0B192C - Deep Midnight Navy
+                'table_header'  => [11, 25, 44],    // Deep Midnight Table Header
+                'light_bg'      => [240, 246, 255], // #F0F6FF - Ice Blue Tint
+                'zebra_bg'      => [247, 250, 255], // Ultra light ice stripe
+                'border'        => [191, 219, 254], // #BFDBFE - Soft Blue Border
+                'border_accent' => [96, 165, 250],  // #60A5FA
+                'pill_bg'       => [239, 246, 255],
+                'pill_border'   => [15, 86, 250],
+                'pill_text'     => [15, 86, 250],
+                'due_bar_bg'    => [15, 86, 250],   // Electric Royal Blue Total Due
+                'due_bar_text'  => [255, 255, 255],
+                'ribbon_colors' => [
+                    [15, 86, 250, 60],   // Lazada Blue
+                    [56, 189, 248, 40],  // Sky Blue
+                    [243, 0, 103, 35],   // Lazada Magenta
+                    [11, 25, 44, 47]     // Deep Midnight
+                ],
+                'seal_border'   => [15, 86, 250],
+                'seal_badge'    => 'LAZADA OFFICIAL VERIFIED',
+                'seal_sub'      => 'Verified Lazada Transaction * BIR Compliant'
+            ];
+        }
+
+        // ── TIKTOK SHOP THEME (Pitch Black / Dark Onyx, Electric Cyan & Neon Red) ──
+        if (strpos($p, 'tik') !== false) {
+            return [
+                'platform_key'  => 'tiktok',
+                'display_name'  => 'TikTok Shop',
+                'badge_label'   => '[ TIKTOK SHOP OFFICIAL ORDER ]',
+                'order_label'   => 'TIKTOK SHOP ORDER ID: ',
+                'primary'       => [18, 18, 20],    // #121214 - Pitch Onyx Black
+                'primary_dark'  => [0, 0, 0],       // Pure Black
+                'accent'        => [254, 44, 85],   // #FE2C55 - TikTok Neon Red/Pink
+                'accent_alt'    => [37, 244, 238],  // #25F4EE - TikTok Electric Cyan
+                'accent_light'  => [255, 235, 240], // Soft neon pink tint
+                'heading_dark'  => [18, 18, 20],    // Pitch Onyx Black
+                'table_header'  => [18, 18, 20],    // Pitch Black Table Header
+                'light_bg'      => [245, 246, 248], // Soft clean graphite tint
+                'zebra_bg'      => [250, 250, 252], // Ultra light neutral stripe
+                'border'        => [212, 212, 216], // Zinc 300
+                'border_accent' => [113, 113, 122], // Zinc 500
+                'pill_bg'       => [244, 244, 246],
+                'pill_border'   => [18, 18, 20],
+                'pill_text'     => [18, 18, 20],
+                'due_bar_bg'    => [18, 18, 20],    // Pitch Black Total Due
+                'due_bar_text'  => [255, 255, 255],
+                'ribbon_colors' => [
+                    [18, 18, 20, 60],   // Pitch Onyx
+                    [37, 244, 238, 35], // Electric Cyan
+                    [254, 44, 85, 35],  // Neon Pink/Red
+                    [39, 39, 42, 52]    // Dark Zinc
+                ],
+                'seal_border'   => [18, 18, 20],
+                'seal_badge'    => 'TIKTOK SHOP VERIFIED',
+                'seal_sub'      => 'Verified TikTok Shop Order * BIR Compliant'
+            ];
+        }
+
+        // ── SHOPEE THEME (Signature Shopee Orange, Warm Coral, Peach Tints) ──
+        return [
+            'platform_key'  => 'shopee',
+            'display_name'  => 'Shopee',
+            'badge_label'   => '[ SHOPEE VERIFIED STORE ORDER ]',
+            'order_label'   => 'SHOPEE ORDER SN: ',
+            'primary'       => [238, 77, 45],   // #EE4D2D - Signature Shopee Orange
+            'primary_dark'  => [196, 52, 23],   // #C43417 - Deep Shopee Rust
+            'accent'        => [255, 115, 55],  // #FF7337 - Warm Coral
+            'accent_light'  => [255, 240, 235], // Soft coral tint
+            'heading_dark'  => [30, 36, 43],    // #1E242B - Deep Warm Slate
+            'table_header'  => [30, 36, 43],    // Warm Slate Table Header
+            'light_bg'      => [255, 247, 244], // #FFF7F4 - Soft Peach Tint
+            'zebra_bg'      => [255, 251, 249], // Ultra light peach stripe
+            'border'        => [254, 215, 170], // #FED7AA - Soft Peach Border
+            'border_accent' => [251, 146, 60],  // #FB923C - Orange 400
+            'pill_bg'       => [255, 245, 242],
+            'pill_border'   => [238, 77, 45],
+            'pill_text'     => [238, 77, 45],
+            'due_bar_bg'    => [238, 77, 45],   // Vibrant Shopee Orange Total Due
+            'due_bar_text'  => [255, 255, 255],
+            'ribbon_colors' => [
+                [238, 77, 45, 60],  // Shopee Orange
+                [255, 115, 55, 40], // Warm Coral
+                [245, 158, 11, 35], // Amber Gold
+                [30, 36, 43, 47]    // Deep Charcoal
+            ],
+            'seal_border'   => [238, 77, 45],
+            'seal_badge'    => 'SHOPEE OFFICIAL VERIFIED',
+            'seal_sub'      => 'Verified Shopee Transaction * BIR Compliant'
+        ];
     }
 
     protected function t($str) {
@@ -39,267 +159,270 @@ class ShopeeInvoicePDF extends FPDF {
     public function build() {
         $this->AddPage();
 
-        // ── Brand & Theme Color Palette ──
-        $navyDark     = [15, 23, 42];    // Deep Slate 900 (Primary Headers & Accents)
-        $slateMedium  = [51, 65, 85];    // Slate 700 (Body Text)
-        $brandRed     = [225, 29, 72];   // Rose / Crimson Red
-        $brandCrimson = [229, 35, 25];   // Vibrant Red Accent
-        $brandGold    = [245, 158, 11];  // Amber / Gold (Emblem wings)
+        $t = $this->theme;
+        $navyDark     = $t['heading_dark'];
         $textPrimary  = [30, 41, 59];    // Slate 800
         $textMuted    = [100, 116, 139]; // Slate 500
         $borderColor  = [203, 213, 225]; // Slate 300
-        $tableHeader  = [15, 23, 42];    // Deep Midnight Slate
-        $lightBg      = [248, 250, 252]; // Soft Slate 50
-        $zebraBg      = [250, 251, 253]; // Very subtle table row stripe
+        $pageLeft     = 14;
+        $pageWidth    = 182; // 210 - 28
 
         // ══════════════════════════════════════════════════════════════
-        // 0. TOP BRAND ACCENT RIBBON
+        // 0. PLATFORM SIGNATURE TOP ACCENT RIBBON (Y = 12 to 15.2)
         // ══════════════════════════════════════════════════════════════
-        $this->SetFillColor($brandCrimson[0], $brandCrimson[1], $brandCrimson[2]);
-        $this->Rect(15, 10, 60, 2.5, 'F');
-        $this->SetFillColor(249, 115, 22); // Flame Orange
-        $this->Rect(75, 10, 40, 2.5, 'F');
-        $this->SetFillColor($brandGold[0], $brandGold[1], $brandGold[2]);
-        $this->Rect(115, 10, 35, 2.5, 'F');
-        $this->SetFillColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Rect(150, 10, 45, 2.5, 'F');
-
-        // ══════════════════════════════════════════════════════════════
-        // 1. SELLER BRAND IDENTITY & OFFICIAL INVOICE HEADER (Y = 14 to 34)
-        // ══════════════════════════════════════════════════════════════
-        $platform = !empty($this->invoiceData['platform_name']) ? $this->invoiceData['platform_name'] : 'Shopee';
-        $platformUpper = strtoupper($platform);
-
-        // Logo Image (Left)
-        $logoPath = __DIR__ . '/../assets/img/logo-horizontal.png';
-        if (file_exists($logoPath)) {
-            // High-resolution horizontal logo: width 55mm, proportional height ~16.5mm
-            $this->Image($logoPath, 15, 14.5, 55);
-        } else {
-            // Fallback Typography
-            $this->SetXY(15, 15);
-            $this->SetFont('Helvetica', 'B', 14);
-            $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-            $this->Cell(60, 6, $this->t($storeName), 0, 1, 'L');
+        $currRibbonX = $pageLeft;
+        foreach ($t['ribbon_colors'] as $rc) {
+            $this->SetFillColor($rc[0], $rc[1], $rc[2]);
+            $this->Rect($currRibbonX, 12, $rc[3], 3.2, 'F');
+            $currRibbonX += $rc[3];
         }
 
-        // Seller Registered Business Details (Beside Logo: X = 71 to 125)
-        $sellerInfoX = 71;
-        $this->SetXY($sellerInfoX, 14.5);
+        // ══════════════════════════════════════════════════════════════
+        // 1. SELLER BRAND IDENTITY & OFFICIAL INVOICE HEADER (Y = 17 to 43)
+        // ══════════════════════════════════════════════════════════════
+        // Logo (Left side)
+        $logoPath = __DIR__ . '/../assets/img/logo-horizontal.png';
+        if (file_exists($logoPath)) {
+            $this->Image($logoPath, $pageLeft, 17.5, 52);
+        } else {
+            $this->SetXY($pageLeft, 18);
+            $this->SetFont('Helvetica', 'B', 15);
+            $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+            $this->Cell(52, 6, 'INVOICE PRO', 0, 1, 'L');
+            $this->SetFont('Helvetica', '', 6.8);
+            $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
+            $this->Cell(52, 4, 'BIR ANNEX A1 ERP SYSTEM', 0, 1, 'L');
+        }
+
+        // Seller Registered Business Details (Middle: X = 69 to 125)
+        $sellerInfoX = 69;
+        $this->SetXY($sellerInfoX, 17);
         $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
         $storeName = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'DEMO E-COMMERCE ENTERPRISES';
-        $this->Cell(54, 3.8, $this->t(substr($storeName, 0, 32)), 0, 1, 'L');
+        $this->Cell(56, 3.8, $this->t(substr($storeName, 0, 36)), 0, 1, 'L');
 
+        // Store Tagline in Platform Accent Color
         $this->SetX($sellerInfoX);
         $this->SetFont('Helvetica', 'B', 7.2);
-        $this->SetTextColor($brandCrimson[0], $brandCrimson[1], $brandCrimson[2]);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
         $storeTagline = !empty($this->storeInfo['store_tagline']) ? strtoupper($this->storeInfo['store_tagline']) : 'E-COMMERCE OFFICIAL RETAIL STORE';
-        $this->Cell(54, 3.2, $this->t($storeTagline), 0, 1, 'L');
+        $this->Cell(56, 3.2, $this->t(substr($storeTagline, 0, 42)), 0, 1, 'L');
 
+        // Store TIN & VAT Status
         $this->SetX($sellerInfoX);
         $this->SetFont('Helvetica', '', 6.8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
         $storeTin = !empty($this->storeInfo['store_tin']) ? $this->storeInfo['store_tin'] : (!empty($this->storeInfo['store_tax_id']) ? $this->storeInfo['store_tax_id'] : '123-456-789-00000');
         $vatStatus = !empty($this->storeInfo['vat_status']) ? $this->storeInfo['vat_status'] : 'VAT Registered';
-        $this->Cell(54, 3.0, $this->t('VAT REG TIN: ' . $storeTin . ' (' . $vatStatus . ')'), 0, 1, 'L');
+        $this->Cell(56, 3.0, $this->t('VAT REG TIN: ' . $storeTin . ' (' . $vatStatus . ')'), 0, 1, 'L');
 
-        // Dynamic address lines
-        $fullStoreAddr = !empty($this->storeInfo['store_address']) ? $this->storeInfo['store_address'] : '123 Commercial Ave., Ortigas Center, Pasig City 1605';
-        $addrParts = explode(',', $fullStoreAddr);
-        $addrLine1 = trim($addrParts[0] ?? $fullStoreAddr);
-        $addrLine2 = trim(implode(',', array_slice($addrParts, 1)));
-        if (empty($addrLine2)) {
-            $addrLine2 = 'Metro Manila, Philippines';
+        // Store Full Address (NO substring clipping - intelligent multi-line split)
+        $fullStoreAddr = !empty($this->storeInfo['store_address']) ? $this->storeInfo['store_address'] : '123 Commercial Ave., Ortigas Center, Pasig City 1605, Metro Manila';
+        $addrParts = array_map('trim', explode(',', $fullStoreAddr));
+        $lineA = $addrParts[0] ?? $fullStoreAddr;
+        $lineB = implode(', ', array_slice($addrParts, 1));
+        if (empty($lineB)) {
+            $lineB = 'Metro Manila, Philippines';
         }
 
         $this->SetX($sellerInfoX);
-        $this->Cell(54, 3.0, $this->t(substr($addrLine1, 0, 38)), 0, 1, 'L');
+        $this->Cell(56, 3.0, $this->t($lineA), 0, 1, 'L');
 
         $this->SetX($sellerInfoX);
-        $this->Cell(54, 3.0, $this->t(substr($addrLine2, 0, 38)), 0, 1, 'L');
+        $this->Cell(56, 3.0, $this->t($lineB), 0, 1, 'L');
 
         $this->SetX($sellerInfoX);
         $storeContact = $this->storeInfo['store_contact'] ?? '(02) 8123-4567 / 0917-000-0000';
-        $this->Cell(54, 3.0, $this->t('Hotline: ' . $storeContact), 0, 1, 'L');
+        $this->Cell(56, 3.0, $this->t('Hotline: ' . $storeContact), 0, 1, 'L');
 
-        // ── Right Side: Official Sales Invoice Title & Serial ──
-        $this->SetXY(126, 13.5);
+        // ── Right Side: Official Sales Invoice Title & Themed Serial ──
+        $headerRightX = 126;
+        $headerRightW = 70;
+
+        $this->SetXY($headerRightX, 16);
         $this->SetFont('Helvetica', 'B', 19);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(69, 6.5, 'SALES INVOICE', 0, 1, 'R');
+        $this->Cell($headerRightW, 6.5, 'SALES INVOICE', 0, 1, 'R');
 
-        $this->SetXY(126, 20);
-        $this->SetFont('Helvetica', 'B', 6.8);
+        $this->SetXY($headerRightX, 22.5);
+        $this->SetFont('Helvetica', 'B', 6.6);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(69, 3.2, 'BIR ANNEX A1 & RR 7-2024 COMPLIANT', 0, 1, 'R');
+        $this->Cell($headerRightW, 3.0, 'BIR ANNEX A1 & RR 7-2024 COMPLIANT', 0, 1, 'R');
 
-        // Multi-Platform Tag Badge
-        $this->SetXY(126, 23.5);
+        // Platform Verified Badge Pill
+        $this->SetXY($headerRightX, 26);
         $this->SetFont('Helvetica', 'B', 6.8);
-        if ($platform === 'Lazada') {
-            $this->SetTextColor(2, 132, 199);
-            $this->Cell(69, 3.2, '[ LAZADA VERIFIED STORE ORDER ]', 0, 1, 'R');
-        } elseif ($platform === 'TikTok' || $platform === 'TikTok Shop') {
-            $this->SetTextColor(15, 23, 42);
-            $this->Cell(69, 3.2, '[ TIKTOK SHOP OFFICIAL ORDER ]', 0, 1, 'R');
-        } else {
-            $this->SetTextColor(238, 77, 45); // Shopee Orange
-            $this->Cell(69, 3.2, '[ SHOPEE VERIFIED STORE ORDER ]', 0, 1, 'R');
-        }
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell($headerRightW, 3.5, $t['badge_label'], 0, 1, 'R');
 
-        // Invoice Number Pill Container
+        // Platform Themed Invoice Number Container
         $invNo = $this->invoiceData['invoice_number'] ?? 'SI-SHP-2026-00001';
-        $this->SetFillColor(254, 242, 242); // Rose 50
-        $this->SetDrawColor($brandRed[0], $brandRed[1], $brandRed[2]);
-        $this->SetLineWidth(0.35);
-        $this->Rect(127, 27.5, 68, 6.8, 'DF');
-        $this->SetXY(127, 28);
+        $pillBoxX = 126;
+        $pillBoxY = 30.5;
+        $pillBoxW = 70;
+        $pillBoxH = 7.2;
+
+        $this->SetFillColor($t['pill_bg'][0], $t['pill_bg'][1], $t['pill_bg'][2]);
+        $this->SetDrawColor($t['pill_border'][0], $t['pill_border'][1], $t['pill_border'][2]);
+        $this->SetLineWidth(0.4);
+        $this->Rect($pillBoxX, $pillBoxY, $pillBoxW, $pillBoxH, 'DF');
+
+        $this->SetXY($pillBoxX, $pillBoxY + 0.8);
         $this->SetFont('Helvetica', 'B', 9.5);
-        $this->SetTextColor($brandRed[0], $brandRed[1], $brandRed[2]);
-        $this->Cell(68, 5.8, $this->t('Invoice No: ' . $invNo), 0, 1, 'C');
+        $this->SetTextColor($t['pill_text'][0], $t['pill_text'][1], $t['pill_text'][2]);
+        $this->Cell($pillBoxW, 5.6, $this->t('Invoice No: ' . $invNo), 0, 1, 'C');
 
         // ══════════════════════════════════════════════════════════════
-        // 2. TRANSACTION TYPE & DATE BAR (Y = 36 to 41)
+        // 2. TRANSACTION TYPE & DATE BAR (Y = 40.5 to 46.5)
         // ══════════════════════════════════════════════════════════════
-        $transY = 36;
+        $transY = 40.5;
         $this->SetY($transY);
-        $this->SetX(15);
+        $this->SetX($pageLeft);
 
-        // Checkboxes
+        // Checkboxes: Cash Sales (Checked) & Charge Sales (Unchecked)
         $this->SetFont('ZapfDingbats', '', 8.5);
         $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
-        $this->Cell(4, 4.5, chr(52), 1, 0, 'C'); // Checked
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell(4.5, 4.5, chr(52), 1, 0, 'C'); // Checked mark
         $this->SetFont('Helvetica', 'B', 8);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(25, 4.5, ' CASH SALES', 0, 0, 'L');
+        $this->Cell(26, 4.5, ' CASH SALES', 0, 0, 'L');
 
         $this->SetFont('ZapfDingbats', '', 8.5);
-        $this->Cell(4, 4.5, '', 1, 0, 'C'); // Unchecked
+        $this->Cell(4.5, 4.5, '', 1, 0, 'C'); // Unchecked
         $this->SetFont('Helvetica', 'B', 8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
         $this->Cell(28, 4.5, ' CHARGE SALES', 0, 0, 'L');
 
-        // Date Line (Right Aligned)
+        // Issue Date (Right Aligned with clean border)
         $issueDate = $this->invoiceData['issue_date'] ?? date('Y-m-d');
-        $this->SetX(125);
+        $this->SetX(120);
         $this->SetFont('Helvetica', 'B', 8);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
-        $this->Cell(20, 4.5, 'Date Issued :', 0, 0, 'R');
+        $this->Cell(22, 4.5, 'Date Issued :', 0, 0, 'R');
         $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(50, 4.5, date('F d, Y', strtotime($issueDate)), 'B', 1, 'L');
+        $this->Cell(54, 4.5, date('F d, Y', strtotime($issueDate)), 'B', 1, 'L');
 
         // ══════════════════════════════════════════════════════════════
         // 3. BUYER INFORMATION BOX (Annex A1 Point 7 - "SOLD TO")
         // ══════════════════════════════════════════════════════════════
-        $soldToBoxY = 42.5;
-        $soldToBoxHeight = 24.5;
+        $soldToBoxY = 47.5;
+        $buyerAddr = !empty($this->invoiceData['buyer_address']) ? $this->invoiceData['buyer_address'] : 'N/A (Store Pickup / Standard Electronic Delivery)';
+        
+        // Calculate dynamic height to guarantee address fits without overflow
+        $this->SetFont('Helvetica', '', 7.8);
+        $addrWidth = $this->GetStringWidth($this->t($buyerAddr));
+        $addrLines = max(1, ceil($addrWidth / 146));
+        $soldToBoxHeight = max(26.5, 14.5 + ($addrLines * 3.8));
 
-        // Box border & clean white background
-        $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
+        // Box border & clean background
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
         $this->SetFillColor(255, 255, 255);
-        $this->SetLineWidth(0.3);
-        $this->Rect(15, $soldToBoxY, 180, $soldToBoxHeight, 'DF');
+        $this->SetLineWidth(0.35);
+        $this->Rect($pageLeft, $soldToBoxY, $pageWidth, $soldToBoxHeight, 'DF');
 
-        // Header Strip inside Box
-        $this->SetFillColor($lightBg[0], $lightBg[1], $lightBg[2]);
-        $this->Rect(15, $soldToBoxY, 180, 5.5, 'F');
-        $this->Line(15, $soldToBoxY + 5.5, 195, $soldToBoxY + 5.5);
+        // Themed Header Strip inside Box
+        $this->SetFillColor($t['light_bg'][0], $t['light_bg'][1], $t['light_bg'][2]);
+        $this->Rect($pageLeft, $soldToBoxY, $pageWidth, 5.8, 'F');
+        $this->Line($pageLeft, $soldToBoxY + 5.8, $pageLeft + $pageWidth, $soldToBoxY + 5.8);
 
-        $this->SetXY(18, $soldToBoxY + 1);
+        $this->SetXY($pageLeft + 3, $soldToBoxY + 1);
         $this->SetFont('Helvetica', 'B', 7.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(65, 3.8, 'SOLD TO (BUYER & DELIVERY DETAILS)', 0, 0, 'L');
+        $this->Cell(65, 4.0, 'SOLD TO (BUYER & DELIVERY DETAILS)', 0, 0, 'L');
 
-        // Platform Order Reference
+        // Platform Order Reference Tag
         $orderSn = $this->invoiceData['order_sn'] ?? '';
-        $this->SetFont('Helvetica', 'B', 7.2);
-        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        if ($platform === 'Lazada') {
-            $orderRefLabel = 'LAZADA ORDER NO: ' . $orderSn;
-        } elseif ($platform === 'TikTok' || $platform === 'TikTok Shop') {
-            $orderRefLabel = 'TIKTOK SHOP ORDER ID: ' . $orderSn;
-        } else {
-            $orderRefLabel = 'SHOPEE ORDER SN: ' . $orderSn;
-        }
-        $this->Cell(109, 3.8, $this->t($orderRefLabel), 0, 1, 'R');
+        $this->SetFont('Helvetica', 'B', 7.4);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $orderRefText = $t['order_label'] . $orderSn;
+        $this->Cell($pageWidth - 71, 4.0, $this->t($orderRefText), 0, 1, 'R');
 
-        // Customer Registered Name
-        $this->SetXY(18, $soldToBoxY + 6.8);
+        // Row 1: Registered Name & Buyer TIN
+        $this->SetXY($pageLeft + 3, $soldToBoxY + 7.2);
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(30, 4.2, 'Registered Name :', 0, 0, 'L');
+        $this->Cell(28, 4.0, 'Registered Name :', 0, 0, 'L');
         $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
         $buyerName = !empty($this->invoiceData['buyer_name']) ? strtoupper($this->invoiceData['buyer_name']) : 'CASH CUSTOMER';
-        $this->Cell(82, 4.2, $this->t($buyerName), 0, 0, 'L');
+        $this->Cell(84, 4.0, $this->t(substr($buyerName, 0, 48)), 0, 0, 'L');
 
-        // Customer TIN
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(12, 4.2, 'TIN :', 0, 0, 'L');
+        $this->Cell(12, 4.0, 'TIN :', 0, 0, 'L');
         $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
         $buyerTin = !empty($this->invoiceData['buyer_tin']) ? $this->invoiceData['buyer_tin'] : '000-000-000-00000';
-        $this->Cell(50, 4.2, $this->t($buyerTin), 0, 1, 'L');
+        $this->Cell(52, 4.0, $this->t($buyerTin), 0, 1, 'L');
 
-        // Customer Business / Delivery Address
-        $this->SetXY(18, $soldToBoxY + 11.8);
+        // Row 2: Customer Delivery Address (MultiCell with proper vertical padding)
+        $this->SetXY($pageLeft + 3, $soldToBoxY + 12.2);
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(30, 3.8, 'Delivery Address :', 0, 0, 'L');
+        $this->Cell(28, 3.8, 'Delivery Address :', 0, 0, 'L');
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
-
-        $buyerAddr = !empty($this->invoiceData['buyer_address']) ? $this->invoiceData['buyer_address'] : 'N/A';
-        $this->MultiCell(144, 3.8, $this->t($buyerAddr), 0, 'L');
+        $this->MultiCell(148, 3.8, $this->t($buyerAddr), 0, 'L');
 
         // ══════════════════════════════════════════════════════════════
         // 4. TRANSACTION DETAILS TABLE (Annex A1 Point 8)
         // ══════════════════════════════════════════════════════════════
-        $tableY = $soldToBoxY + $soldToBoxHeight + 3;
+        $tableY = $soldToBoxY + $soldToBoxHeight + 3.0;
         $this->SetY($tableY);
 
         $colNum   = 10;
-        $colDesc  = 88;
-        $colQty   = 20;
-        $colPrice = 31;
-        $colAmt   = 31;
+        $colDesc  = 90;
+        $colQty   = 16;
+        $colPrice = 33;
+        $colAmt   = 33;
 
-        // Table Header: Deep Midnight Slate 900 Fill with Crisp White Text
-        $this->SetFillColor($tableHeader[0], $tableHeader[1], $tableHeader[2]);
-        $this->SetDrawColor($tableHeader[0], $tableHeader[1], $tableHeader[2]);
+        // Table Header: Deep Sleek Theme with Platform Primary Accent Line
+        $this->SetFillColor($t['table_header'][0], $t['table_header'][1], $t['table_header'][2]);
+        $this->SetDrawColor($t['table_header'][0], $t['table_header'][1], $t['table_header'][2]);
         $this->SetFont('Helvetica', 'B', 8);
         $this->SetTextColor(255, 255, 255);
 
-        $this->Cell($colNum, 7, '#', 1, 0, 'C', true);
-        $this->Cell($colDesc, 7, '  ITEM DESCRIPTION / PRODUCT DETAILS', 1, 0, 'L', true);
-        $this->Cell($colQty, 7, 'QTY', 1, 0, 'C', true);
-        $this->Cell($colPrice, 7, 'UNIT PRICE (PHP)', 1, 0, 'R', true);
-        $this->Cell($colAmt, 7, 'AMOUNT (PHP)  ', 1, 1, 'R', true);
+        // Top decorative accent line on table header
+        $this->SetLineWidth(0.6);
+        if ($t['platform_key'] === 'tiktok') {
+            // Dual electric accent line: Electric Cyan on left, Neon Red on right
+            $this->SetDrawColor(37, 244, 238); // Cyan
+            $this->Line($pageLeft, $tableY, $pageLeft + 91, $tableY);
+            $this->SetDrawColor(254, 44, 85); // Neon Red
+            $this->Line($pageLeft + 91, $tableY, $pageLeft + $pageWidth, $tableY);
+        } else {
+            $this->SetDrawColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+            $this->Line($pageLeft, $tableY, $pageLeft + $pageWidth, $tableY);
+        }
+
+        $this->SetLineWidth(0.2);
+        $this->SetX($pageLeft);
+        $this->Cell($colNum, 7.5, '#', 1, 0, 'C', true);
+        $this->Cell($colDesc, 7.5, '  ITEM DESCRIPTION / PRODUCT DETAILS', 1, 0, 'L', true);
+        $this->Cell($colQty, 7.5, 'QTY', 1, 0, 'C', true);
+        $this->Cell($colPrice, 7.5, 'UNIT PRICE (PHP) ', 1, 0, 'R', true);
+        $this->Cell($colAmt, 7.5, 'AMOUNT (PHP)  ', 1, 1, 'R', true);
 
         // Table Rows
         $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
 
-        // Support both 'items' and 'items_json' keys seamlessly
         $items = $this->invoiceData['items'] ?? $this->invoiceData['items_json'] ?? [];
         if (is_string($items)) {
             $items = json_decode($items, true) ?: [];
         }
 
         $tableStartY = $this->GetY();
-        $totalItemsCount = 0;
         $grossTableSum = 0;
         $itemIdx = 0;
 
         foreach ($items as $item) {
             $itemIdx++;
             $qty = (int)($item['quantity'] ?? 1);
-            $totalItemsCount += $qty;
-
             $desc = trim($item['product_name'] ?? 'Item');
             $varName = !empty($item['variation_name']) ? trim($item['variation_name']) : '';
 
@@ -309,307 +432,375 @@ class ShopeeInvoicePDF extends FPDF {
 
             $fullDesc = $desc . ($varName ? ' [' . $varName . ']' : '');
 
-            // Pre-calculate precise height for description
+            // Pre-calculate line count for clean vertical cell balance
             $this->SetFont('Helvetica', '', 7.6);
             $descWidth = $this->GetStringWidth($this->t($fullDesc));
             $lines = max(1, ceil($descWidth / ($colDesc - 6)));
-            $actualH = max(6.5, ($lines * 3.8) + 1.8);
+            $actualH = max(7.2, ($lines * 4.0) + 2.0);
 
             $currY = $this->GetY();
-            
-            // Subtle zebra striping
+
+            // Subtle platform zebra striping
             if ($itemIdx % 2 === 0) {
-                $this->SetFillColor($zebraBg[0], $zebraBg[1], $zebraBg[2]);
-                $this->Rect(15, $currY, 180, $actualH, 'F');
+                $this->SetFillColor($t['zebra_bg'][0], $t['zebra_bg'][1], $t['zebra_bg'][2]);
+                $this->Rect($pageLeft, $currY, $pageWidth, $actualH, 'F');
             }
 
             // Index #
-            $this->SetXY(15, $currY);
+            $this->SetXY($pageLeft, $currY);
             $this->SetFont('Helvetica', 'B', 7.5);
             $this->Cell($colNum, $actualH, (string)$itemIdx, 'LR', 0, 'C');
 
-            // Description (MultiCell with matching border)
-            $this->SetXY(15 + $colNum, $currY + 0.9);
+            // Description
+            $this->SetXY($pageLeft + $colNum, $currY + 1.0);
             $this->SetFont('Helvetica', '', 7.6);
-            $this->MultiCell($colDesc, 3.8, ' ' . $this->t($fullDesc), 0, 'L');
-            
-            // Outer column border for description
-            $this->Rect(15 + $colNum, $currY, $colDesc, $actualH);
+            $this->MultiCell($colDesc, 4.0, ' ' . $this->t($fullDesc), 0, 'L');
+            $this->Rect($pageLeft + $colNum, $currY, $colDesc, $actualH);
 
             // Quantity
-            $this->SetXY(15 + $colNum + $colDesc, $currY);
+            $this->SetXY($pageLeft + $colNum + $colDesc, $currY);
             $this->Cell($colQty, $actualH, (string)$qty, 'LR', 0, 'C');
 
             // Unit Price
-            $this->SetXY(15 + $colNum + $colDesc + $colQty, $currY);
+            $this->SetXY($pageLeft + $colNum + $colDesc + $colQty, $currY);
             $this->Cell($colPrice, $actualH, $this->money($unitPrice) . ' ', 'LR', 0, 'R');
 
             // Amount
-            $this->SetXY(15 + $colNum + $colDesc + $colQty + $colPrice, $currY);
+            $this->SetXY($pageLeft + $colNum + $colDesc + $colQty + $colPrice, $currY);
             $this->Cell($colAmt, $actualH, $this->money($subtotal) . ' ', 'LR', 1, 'R');
 
             $this->SetY($currY + $actualH);
         }
 
-        // Shipping Fee Row
+        // Shipping Fee Row (if applicable)
         $shippingFee = (float)($this->invoiceData['shipping_fee'] ?? 0);
         if ($shippingFee > 0) {
             $currY = $this->GetY();
-            $this->SetXY(15, $currY);
-            $this->Cell($colNum, 5.5, '', 'LR', 0, 'C');
-            $this->Cell($colDesc, 5.5, ' Shipping & Logistics Handling Fee', 'LR', 0, 'L');
-            $this->Cell($colQty, 5.5, '1', 'LR', 0, 'C');
-            $this->Cell($colPrice, 5.5, $this->money($shippingFee) . ' ', 'LR', 0, 'R');
-            $this->Cell($colAmt, 5.5, $this->money($shippingFee) . ' ', 'LR', 1, 'R');
+            $this->SetXY($pageLeft, $currY);
+            $this->Cell($colNum, 6.0, '', 'LR', 0, 'C');
+            $this->Cell($colDesc, 6.0, ' Shipping & Logistics Handling Fee', 'LR', 0, 'L');
+            $this->Cell($colQty, 6.0, '1', 'LR', 0, 'C');
+            $this->Cell($colPrice, 6.0, $this->money($shippingFee) . ' ', 'LR', 0, 'R');
+            $this->Cell($colAmt, 6.0, $this->money($shippingFee) . ' ', 'LR', 1, 'R');
             $grossTableSum += $shippingFee;
         }
 
-        // Voucher / Discount Row
+        // Promotional Discount Row (Cleanly formatted: QTY is "—" instead of "1")
         $discountAmount = (float)($this->invoiceData['discount_amount'] ?? 0);
         if ($discountAmount > 0) {
             $currY = $this->GetY();
-            $this->SetXY(15, $currY);
+            $this->SetXY($pageLeft, $currY);
             $this->SetFont('Helvetica', 'I', 7.6);
-            $this->SetTextColor($brandRed[0], $brandRed[1], $brandRed[2]);
-            $this->Cell($colNum, 5.5, '', 'LR', 0, 'C');
-            $this->Cell($colDesc, 5.5, ' Less: Promotional Discounts & Vouchers', 'LR', 0, 'L');
-            $this->SetFont('Helvetica', '', 7.8);
-            $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
-            $this->Cell($colQty, 5.5, '1', 'LR', 0, 'C');
-            $this->SetTextColor($brandRed[0], $brandRed[1], $brandRed[2]);
-            $this->Cell($colPrice, 5.5, '-' . $this->money($discountAmount) . ' ', 'LR', 0, 'R');
-            $this->Cell($colAmt, 5.5, '-' . $this->money($discountAmount) . ' ', 'LR', 1, 'R');
+            $this->SetTextColor(225, 29, 72); // Rose Red
+            $this->Cell($colNum, 6.0, '', 'LR', 0, 'C');
+            $this->Cell($colDesc, 6.0, ' Less: Promotional Discounts & Vouchers', 'LR', 0, 'L');
+            $this->SetFont('Helvetica', '', 7.6);
+            $this->Cell($colQty, 6.0, chr(151), 'LR', 0, 'C'); // Em-dash instead of "1"
+            $this->Cell($colPrice, 6.0, '-' . $this->money($discountAmount) . ' ', 'LR', 0, 'R');
+            $this->Cell($colAmt, 6.0, '-' . $this->money($discountAmount) . ' ', 'LR', 1, 'R');
             $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
         }
 
-        // Table Filler Height for consistent aesthetic
+        // ── Balanced Table Height & Official BIR Legal Closure ──
         $currentTableHeight = $this->GetY() - $tableStartY;
-        $minHeight = 44;
-        if ($currentTableHeight < $minHeight) {
-            $filler = $minHeight - $currentTableHeight;
+        $targetTableHeight = 72; // Spans table down to ~Y=155mm for majestic page balance
+        if ($currentTableHeight < $targetTableHeight) {
+            $filler = $targetTableHeight - $currentTableHeight;
+            $closureY = $this->GetY() + ($filler / 2) - 2.0;
+
+            // Draw column boundary borders for filler
+            $this->SetX($pageLeft);
             $this->Cell($colNum, $filler, '', 'LR', 0, 'C');
             $this->Cell($colDesc, $filler, '', 'LR', 0, 'L');
             $this->Cell($colQty, $filler, '', 'LR', 0, 'C');
             $this->Cell($colPrice, $filler, '', 'LR', 0, 'R');
             $this->Cell($colAmt, $filler, '', 'LR', 1, 'R');
+
+            // Centered legal certification closure notice inside the table
+            $this->SetXY($pageLeft + $colNum + 2, $closureY);
+            $this->SetFont('Helvetica', 'I', 7.2);
+            $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
+            $this->Cell($colDesc - 4, 4.0, '- NOTHING FOLLOWS / CERTIFIED TRUE COPY -', 0, 0, 'C');
         }
 
-        // Table Bottom Border
-        $this->Cell(180, 0, '', 'T', 1);
-        $this->Ln(2);
+        // Table Bottom Border - strictly aligned at pageLeft across full pageWidth
+        $tableFinalY = $tableStartY + max($currentTableHeight, $targetTableHeight);
+        $this->SetXY($pageLeft, $tableFinalY);
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
+        $this->SetLineWidth(0.4);
+        $this->Cell($pageWidth, 0, '', 'T', 1);
+        $this->Ln(3);
 
         // ══════════════════════════════════════════════════════════════
         // 5. DUAL TAX BREAKDOWN BOXES (Annex A1 Points 9 & 10)
         // ══════════════════════════════════════════════════════════════
         $taxBoxY = $this->GetY();
-        $grandTotal   = (float)($this->invoiceData['total_amount'] ?? $this->invoiceData['grand_total'] ?? 0);
-        $vatableSales = (float)($this->invoiceData['vatable_sales'] ?? round($grandTotal / 1.12, 2));
-        $vatAmount    = (float)($this->invoiceData['vat_amount'] ?? round($grandTotal - $vatableSales, 2));
 
-        // Fallback for gross table total to ensure it never shows 0.00
+        // Calculate totals with safe fallback to prevent 0.00
+        $grandTotal = (float)($this->invoiceData['total_amount'] ?? 0);
+        if ($grandTotal <= 0 && !empty($this->invoiceData['grand_total'])) {
+            $grandTotal = (float)$this->invoiceData['grand_total'];
+        }
+
+        $vatableSales = (float)($this->invoiceData['vatable_sales'] ?? 0);
+        if ($vatableSales <= 0 && $grandTotal > 0) {
+            $vatableSales = round($grandTotal / 1.12, 2);
+        }
+
+        $vatAmount = (float)($this->invoiceData['vat_amount'] ?? 0);
+        if ($vatAmount <= 0 && $grandTotal > 0) {
+            $vatAmount = round($grandTotal - $vatableSales, 2);
+        }
+
         $totalSalesGross = $grossTableSum > 0 ? $grossTableSum : ($grandTotal + $discountAmount);
 
-        // ── LEFT BOX: VAT Classification (Annex A1 Section 10) ──
-        $leftW = 86;
-        $boxH = 36;
-        $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
-        $this->Rect(15, $taxBoxY, $leftW, $boxH);
+        $boxH = 43; // Generous height for breathable line heights (4.6mm per row)
+        $leftW = 87;
 
-        // Header line inside left box
-        $this->SetFillColor($lightBg[0], $lightBg[1], $lightBg[2]);
-        $this->Rect(15, $taxBoxY, $leftW, 5.5, 'F');
-        $this->Line(15, $taxBoxY + 5.5, 15 + $leftW, $taxBoxY + 5.5);
+        // ── LEFT BOX: 12% VAT Breakdown (Annex A1 Section 10) ──
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
+        $this->SetLineWidth(0.35);
+        $this->Rect($pageLeft, $taxBoxY, $leftW, $boxH);
 
-        $this->SetXY(17, $taxBoxY + 1);
-        $this->SetFont('Helvetica', 'B', 7.2);
+        // Themed header strip
+        $this->SetFillColor($t['light_bg'][0], $t['light_bg'][1], $t['light_bg'][2]);
+        $this->Rect($pageLeft, $taxBoxY, $leftW, 5.8, 'F');
+        $this->Line($pageLeft, $taxBoxY + 5.8, $pageLeft + $leftW, $taxBoxY + 5.8);
+
+        $this->SetXY($pageLeft + 3, $taxBoxY + 1.2);
+        $this->SetFont('Helvetica', 'B', 7.4);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(80, 3.8, '12% VAT BREAKDOWN (ANNEX A1 SEC. 10)', 0, 1, 'L');
+        $this->Cell($leftW - 6, 4.0, '12% VAT BREAKDOWN (ANNEX A1 SEC. 10)', 0, 1, 'L');
 
         $rowH = 4.8;
         $this->SetFont('Helvetica', '', 7.8);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
 
-        $this->SetXY(17, $taxBoxY + 6.5);
-        $this->Cell(46, $rowH, ' VATable Sales', 0, 0, 'L');
-        $this->Cell(35, $rowH, 'PHP ' . $this->money($vatableSales), 0, 1, 'R');
+        $this->SetXY($pageLeft + 3, $taxBoxY + 7.5);
+        $this->Cell(48, $rowH, ' VATable Sales', 0, 0, 'L');
+        $this->Cell(34, $rowH, 'PHP ' . $this->money($vatableSales), 0, 1, 'R');
 
-        $this->SetX(17);
+        $this->SetX($pageLeft + 3);
         $this->SetFont('Helvetica', 'B', 7.8);
-        $this->Cell(46, $rowH, ' VAT Amount (12%)', 0, 0, 'L');
-        $this->Cell(35, $rowH, 'PHP ' . $this->money($vatAmount), 0, 1, 'R');
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell(48, $rowH, ' VAT Amount (12%)', 0, 0, 'L');
+        $this->Cell(34, $rowH, 'PHP ' . $this->money($vatAmount), 0, 1, 'R');
 
-        $this->SetX(17);
+        $this->SetX($pageLeft + 3);
         $this->SetFont('Helvetica', '', 7.8);
-        $this->Cell(46, $rowH, ' Zero-Rated Sales', 0, 0, 'L');
-        $this->Cell(35, $rowH, '0.00', 0, 1, 'R');
+        $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
+        $this->Cell(48, $rowH, ' Zero-Rated Sales', 0, 0, 'L');
+        $this->Cell(34, $rowH, '0.00', 0, 1, 'R');
 
-        $this->SetX(17);
-        $this->Cell(46, $rowH, ' VAT-Exempt Sales', 0, 0, 'L');
-        $this->Cell(35, $rowH, '0.00', 0, 1, 'R');
+        $this->SetX($pageLeft + 3);
+        $this->Cell(48, $rowH, ' VAT-Exempt Sales', 0, 0, 'L');
+        $this->Cell(34, $rowH, '0.00', 0, 1, 'R');
 
         // Divider inside Left Box
-        $this->Line(15, $taxBoxY + 26, 15 + $leftW, $taxBoxY + 26);
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
+        $this->Line($pageLeft, $taxBoxY + 30.5, $pageLeft + $leftW, $taxBoxY + 30.5);
 
         // "Received the amount of" bottom section
-        $this->SetXY(17, $taxBoxY + 27);
+        $this->SetXY($pageLeft + 3, $taxBoxY + 32.2);
         $this->SetFont('ZapfDingbats', '', 8);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
         $this->Cell(4, 4, chr(52), 1, 0, 'C'); // Checked
         $this->SetFont('Helvetica', 'B', 7.5);
-        $this->Cell(36, 4, ' Received the amount of :', 0, 0, 'L');
-        $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(41, 4, 'PHP ' . $this->money($grandTotal), 0, 1, 'R');
+        $this->Cell(38, 4, ' Received the amount of :', 0, 0, 'L');
+        $this->SetFont('Helvetica', 'B', 9);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell(40, 4, 'PHP ' . $this->money($grandTotal), 0, 1, 'R');
 
-        $this->SetXY(17, $taxBoxY + 31.5);
-        $this->SetFont('Helvetica', 'I', 6.5);
+        $this->SetXY($pageLeft + 3, $taxBoxY + 37.2);
+        $this->SetFont('Helvetica', 'I', 6.8);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(80, 3.5, $this->t('Electronic Payment via ' . $platform . ' (Fully Settled)'), 0, 1, 'L');
+        $this->Cell($leftW - 6, 3.5, $this->t('Electronic Payment via ' . $t['display_name'] . ' (Fully Settled)'), 0, 1, 'L');
 
         // ── RIGHT BOX: Settlement Summary (Annex A1 Section 9) ──
-        $rightX = 104;
-        $rightW = 91;
-        $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
+        $rightX = $pageLeft + $leftW + 3;
+        $rightW = $pageWidth - $leftW - 3; // 92mm
+
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
         $this->Rect($rightX, $taxBoxY, $rightW, $boxH);
 
-        // Header line inside right box
-        $this->SetFillColor($lightBg[0], $lightBg[1], $lightBg[2]);
-        $this->Rect($rightX, $taxBoxY, $rightW, 5.5, 'F');
-        $this->Line($rightX, $taxBoxY + 5.5, $rightX + $rightW, $taxBoxY + 5.5);
+        // Themed header strip
+        $this->SetFillColor($t['light_bg'][0], $t['light_bg'][1], $t['light_bg'][2]);
+        $this->Rect($rightX, $taxBoxY, $rightW, 5.8, 'F');
+        $this->Line($rightX, $taxBoxY + 5.8, $rightX + $rightW, $taxBoxY + 5.8);
 
-        $this->SetXY($rightX + 2, $taxBoxY + 1);
-        $this->SetFont('Helvetica', 'B', 7.2);
+        $this->SetXY($rightX + 3, $taxBoxY + 1.2);
+        $this->SetFont('Helvetica', 'B', 7.4);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell(85, 3.8, 'PAYMENT & TAX COMPUTATION (SEC. 9)', 0, 1, 'L');
+        $this->Cell($rightW - 6, 4.0, 'PAYMENT & TAX COMPUTATION (SEC. 9)', 0, 1, 'L');
 
-        $this->SetFont('Helvetica', '', 7.5);
+        $rRowH = 4.2;
+        $this->SetFont('Helvetica', '', 7.6);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
 
-        $rRowH = 3.6;
-        $this->SetXY($rightX + 2, $taxBoxY + 6.2);
-        $this->Cell(52, $rRowH, ' Total Sales (VAT Inclusive)', 0, 0, 'L');
+        $this->SetXY($rightX + 3, $taxBoxY + 7.2);
+        $this->Cell(53, $rRowH, ' Total Sales (VAT Inclusive)', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($totalSalesGross), 0, 1, 'R');
 
-        $this->SetX($rightX + 2);
-        $this->Cell(52, $rRowH, ' Less: 12% VAT', 0, 0, 'L');
+        $this->SetX($rightX + 3);
+        $this->Cell(53, $rRowH, ' Less: 12% VAT', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($vatAmount), 0, 1, 'R');
 
-        $this->SetX($rightX + 2);
-        $this->Cell(52, $rRowH, ' Amount : Net of VAT', 0, 0, 'L');
+        $this->SetX($rightX + 3);
+        $this->Cell(53, $rRowH, ' Amount : Net of VAT', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($vatableSales), 0, 1, 'R');
 
-        $this->SetX($rightX + 2);
-        $this->Cell(52, $rRowH, ' Less: Discount (SC/PWD/Voucher)', 0, 0, 'L');
+        $this->SetX($rightX + 3);
+        $this->Cell(53, $rRowH, ' Less: Discount (SC/PWD/Voucher)', 0, 0, 'L');
         $this->Cell(34, $rRowH, ($discountAmount > 0 ? '-' . $this->money($discountAmount) : '0.00'), 0, 1, 'R');
 
-        $this->SetX($rightX + 2);
-        $this->Cell(52, $rRowH, ' Add: 12% VAT', 0, 0, 'L');
+        $this->SetX($rightX + 3);
+        $this->Cell(53, $rRowH, ' Add: 12% VAT', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($vatAmount), 0, 1, 'R');
 
-        $this->SetX($rightX + 2);
-        $this->Cell(52, $rRowH, ' Less: Withholding Tax', 0, 0, 'L');
+        $this->SetX($rightX + 3);
+        $this->Cell(53, $rRowH, ' Less: Withholding Tax', 0, 0, 'L');
         $this->Cell(34, $rRowH, '0.00', 0, 1, 'R');
 
-        // TOTAL AMOUNT DUE Dark Navy Highlight Bar
-        $this->SetXY($rightX, $taxBoxY + 28);
-        $this->SetFillColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Rect($rightX, $taxBoxY + 28, $rightW, 8, 'F');
+        // TOTAL AMOUNT DUE Themed Identity Bar
+        $dueBarY = $taxBoxY + 33.5;
+        $dueBarH = 9.5;
+        $this->SetFillColor($t['due_bar_bg'][0], $t['due_bar_bg'][1], $t['due_bar_bg'][2]);
+        $this->Rect($rightX, $dueBarY, $rightW, $dueBarH, 'F');
 
-        $this->SetXY($rightX + 3, $taxBoxY + 29);
+        $this->SetXY($rightX + 4, $dueBarY + 1.8);
         $this->SetFont('Helvetica', 'B', 8.5);
-        $this->SetTextColor(255, 255, 255);
+        $this->SetTextColor($t['due_bar_text'][0], $t['due_bar_text'][1], $t['due_bar_text'][2]);
         $this->Cell(45, 6, 'TOTAL AMOUNT DUE', 0, 0, 'L');
-        $this->SetFont('Helvetica', 'B', 10.5);
-        $this->Cell(40, 6, 'PHP ' . $this->money($grandTotal), 0, 1, 'R');
+        $this->SetFont('Helvetica', 'B', 11.5);
+        $this->Cell($rightW - 53, 6, 'PHP ' . $this->money($grandTotal), 0, 1, 'R');
 
         // ══════════════════════════════════════════════════════════════
-        // 6. SC / PWD / SOLO PARENT BOX (Annex A1 Point 11)
+        // 6. SC / PWD / SOLO PARENT STATUTORY BOX (Annex A1 Point 11)
         // ══════════════════════════════════════════════════════════════
-        $pwdBoxY = $taxBoxY + $boxH + 2.5;
-        $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
+        $pwdBoxY = $taxBoxY + $boxH + 3.0;
+        $pwdBoxH = 10.5;
+
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
         $this->SetFillColor(255, 255, 255);
-        $this->Rect(15, $pwdBoxY, 180, 9.5, 'DF');
+        $this->SetLineWidth(0.35);
+        $this->Rect($pageLeft, $pwdBoxY, $pageWidth, $pwdBoxH, 'DF');
 
-        $this->SetXY(18, $pwdBoxY + 1.2);
-        $this->SetFont('Helvetica', 'B', 7);
+        $this->SetXY($pageLeft + 3, $pwdBoxY + 1.8);
+        $this->SetFont('Helvetica', 'B', 7.2);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell(52, 3.5, 'SC/PWD/NAAC/MOV/Solo Parent ID No. :', 0, 0, 'L');
-        $this->SetFont('Helvetica', '', 7);
-        $this->Cell(55, 3.5, 'N/A (Standard E-Commerce Transaction)', 0, 0, 'L');
+        $this->Cell(54, 3.5, 'SC/PWD/NAAC/MOV/Solo Parent ID No. :', 0, 0, 'L');
+        $this->SetFont('Helvetica', '', 7.2);
+        $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
+        $this->Cell(56, 3.5, 'N/A (Standard E-Commerce Transaction)', 0, 0, 'L');
 
-        $this->SetFont('Helvetica', 'B', 7);
+        $this->SetFont('Helvetica', 'B', 7.2);
+        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
         $this->Cell(18, 3.5, 'Signature :', 0, 0, 'L');
-        $this->Line(148, $pwdBoxY + 4.5, 190, $pwdBoxY + 4.5);
+        $this->Line($pageLeft + 130, $pwdBoxY + 5.2, $pageLeft + $pageWidth - 5, $pwdBoxY + 5.2);
 
-        $this->SetXY(18, $pwdBoxY + 5);
-        $this->SetFont('Helvetica', 'I', 6.2);
-        $this->Cell(174, 3.5, 'Applicable for qualified Senior Citizen, PWD, or Solo Parent buyers claiming statutory discounts.', 0, 1, 'L');
-
-        // ══════════════════════════════════════════════════════════════
-        // 7. PERMIT TO USE, ATP FOOTER & OFFICIAL SECURITY SEAL
-        // ══════════════════════════════════════════════════════════════
-        $footerY = $pwdBoxY + 12;
-        $this->SetDrawColor($borderColor[0], $borderColor[1], $borderColor[2]);
-        $this->Line(15, $footerY, 195, $footerY);
-
-        $this->SetXY(15, $footerY + 1.5);
-        $this->SetFont('Helvetica', '', 6.5);
+        $this->SetXY($pageLeft + 3, $pwdBoxY + 5.8);
+        $this->SetFont('Helvetica', 'I', 6.4);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
+        $this->Cell($pageWidth - 6, 3.5, 'Applicable for qualified Senior Citizen, PWD, or Solo Parent buyers claiming statutory discounts.', 0, 1, 'L');
+
+        // ══════════════════════════════════════════════════════════════
+        // 7. PERMIT TO USE, ATP FOOTER & OFFICIAL PLATFORM SECURITY SEAL
+        // ══════════════════════════════════════════════════════════════
+        $footerY = $pwdBoxY + $pwdBoxH + 3.0;
+
+        // Divider rule
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
+        $this->SetLineWidth(0.35);
+        $this->Line($pageLeft, $footerY, $pageLeft + $pageWidth, $footerY);
 
         $permitNo = $this->storeInfo['permit_no'] ?? 'POS-CAS-2026-001';
         $atpNo = $this->storeInfo['atp_no'] ?? '3AU00000605922';
         $approvedSeries = $this->storeInfo['approved_series'] ?? 'SI-SHP-2026-00001 - SI-SHP-2026-99999';
 
-        // Left Column: Permit Details
+        // 2-Column Statutory Information
+        $this->SetXY($pageLeft, $footerY + 1.8);
+        $this->SetFont('Helvetica', '', 6.6);
+        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
         $this->Cell(95, 3.2, $this->t('PERMIT TO USE / CAS ACN: ' . $permitNo), 0, 0, 'L');
-        // Right Column: ATP No
-        $this->Cell(85, 3.2, $this->t('BIR AUTHORITY TO PRINT NO: ' . $atpNo), 0, 1, 'R');
+        $this->Cell($pageWidth - 95, 3.2, $this->t('BIR AUTHORITY TO PRINT NO: ' . $atpNo), 0, 1, 'R');
 
-        $this->SetX(15);
+        $this->SetX($pageLeft);
         $this->Cell(95, 3.2, 'SYSTEM: BIR E-COMMERCE E-INVOICE ENTERPRISE ERP', 0, 0, 'L');
-        $this->Cell(85, 3.2, $this->t('APPROVED SERIES: ' . $approvedSeries), 0, 1, 'R');
+        $this->Cell($pageWidth - 95, 3.2, $this->t('APPROVED SERIES: ' . $approvedSeries), 0, 1, 'R');
 
-        $this->SetX(15);
-        $this->SetFont('Helvetica', 'B', 6.5);
-        $this->Cell(180, 3.5, $this->t('"THIS SALES INVOICE SHALL BE VALID FOR FIVE (5) YEARS FROM THE DATE OF ISSUANCE"'), 0, 1, 'C');
+        // Centered 5-Year Validity Statement
+        $this->SetXY($pageLeft, $footerY + 8.8);
+        $this->SetFont('Helvetica', 'B', 7.0);
+        $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
+        $this->Cell($pageWidth, 3.5, $this->t('"THIS SALES INVOICE SHALL BE VALID FOR FIVE (5) YEARS FROM THE DATE OF ISSUANCE"'), 0, 1, 'C');
 
-        // ── Official Security Seal (Bottom Right) ──
-        $stampX = 126;
-        $stampY = $footerY + 11.5;
-        $stampW = 69;
-        $stampH = 15;
+        // ── Official Platform-Themed Security Seal & Digital Verification Stamp ──
+        $sealY = $footerY + 13.5;
+        $sealW = 76;
+        $sealH = 17;
+        $sealX = $pageLeft + $pageWidth - $sealW; // Right-aligned
 
+        // Seal outer card
         $this->SetDrawColor(226, 232, 240);
-        $this->SetFillColor(250, 250, 250);
-        $this->Rect($stampX, $stampY, $stampW, $stampH, 'DF');
+        $this->SetFillColor($t['light_bg'][0], $t['light_bg'][1], $t['light_bg'][2]);
+        $this->Rect($sealX, $sealY, $sealW, $sealH, 'DF');
 
-        // Inner seal border
-        $this->SetDrawColor($brandRed[0], $brandRed[1], $brandRed[2]);
-        $this->SetLineWidth(0.25);
-        $this->Rect($stampX + 1, $stampY + 1, $stampW - 2, $stampH - 2);
+        // Inner seal accent border in platform theme color
+        $this->SetDrawColor($t['seal_border'][0], $t['seal_border'][1], $t['seal_border'][2]);
+        $this->SetLineWidth(0.35);
+        $this->Rect($sealX + 1.2, $sealY + 1.2, $sealW - 2.4, $sealH - 2.4);
 
         // Logo Mark inside Seal
         $markPath = __DIR__ . '/../assets/img/logo-mark.png';
-        $stampTextX = $stampX + 3;
+        $sealTextX = $sealX + 3.5;
         if (file_exists($markPath)) {
-            $this->Image($markPath, $stampX + 2.5, $stampY + 2.5, 10);
-            $stampTextX = $stampX + 14;
+            $this->Image($markPath, $sealX + 2.8, $sealY + 2.8, 11);
+            $sealTextX = $sealX + 15.5;
         }
 
-        $this->SetXY($stampTextX, $stampY + 2.2);
+        $sealTextW = $sealW - ($sealTextX - $sealX) - 3;
+
+        $this->SetXY($sealTextX, $sealY + 2.5);
+        $this->SetFont('Helvetica', 'B', 7.0);
+        $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
+        $sealStore = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'OFFICIAL VERIFIED MERCHANT';
+        $this->Cell($sealTextW, 3.2, $this->t(substr($sealStore, 0, 30)), 0, 1, 'L');
+
+        $this->SetX($sealTextX);
+        $this->SetFont('Helvetica', 'B', 6.4);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell($sealTextW, 3.2, $this->t('OFFICIAL E-INVOICE * VALID & ISSUED'), 0, 1, 'L');
+
+        $this->SetX($sealTextX);
+        $this->SetFont('Helvetica', '', 6.0);
+        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
+        $this->Cell($sealTextW, 3.0, $this->t($t['seal_sub']), 0, 1, 'L');
+
+        $this->SetX($sealTextX);
+        $this->SetFont('Helvetica', 'I', 5.6);
+        $this->Cell($sealTextW, 2.8, 'Authorized Digital Signature * BIR Compliant', 0, 1, 'L');
+
+        // ── Left Side Security Barcode / Compliance Badge ──
+        $badgeLeftX = $pageLeft;
+        $badgeLeftW = 98;
+        $this->SetXY($badgeLeftX, $sealY + 2.0);
         $this->SetFont('Helvetica', 'B', 6.8);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $sealTitle = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'OFFICIAL VERIFIED MERCHANT';
-        $this->Cell($stampW - ($stampTextX - $stampX) - 2, 3.2, $this->t(substr($sealTitle, 0, 28)), 0, 1, 'L');
+        $this->Cell($badgeLeftW, 3.2, 'OFFICIAL ELECTRONIC INVOICE (EIS/CAS COMPLIANT)', 0, 1, 'L');
 
-        $this->SetX($stampTextX);
-        $this->SetFont('Helvetica', 'B', 6.2);
-        $this->SetTextColor($brandCrimson[0], $brandCrimson[1], $brandCrimson[2]);
-        $this->Cell($stampW - ($stampTextX - $stampX) - 2, 3, 'OFFICIAL E-INVOICE * VALID & ISSUED', 0, 1, 'L');
-
-        $this->SetX($stampTextX);
-        $this->SetFont('Helvetica', '', 5.8);
+        $this->SetX($badgeLeftX);
+        $this->SetFont('Helvetica', '', 6.2);
         $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell($stampW - ($stampTextX - $stampX) - 2, 2.8, 'Authorized Digital Signature * BIR Compliant', 0, 1, 'L');
+        $this->Cell($badgeLeftW, 3.0, $this->t('Issued under BIR RR No. 7-2024 and RMC No. 63-2024 for E-Commerce.'), 0, 1, 'L');
+
+        $this->SetX($badgeLeftX);
+        $this->Cell($badgeLeftW, 3.0, $this->t('Order Reference: ' . $orderSn), 0, 1, 'L');
+
+        $this->SetX($badgeLeftX);
+        $this->SetFont('Helvetica', 'I', 6.0);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell($badgeLeftW, 3.0, $this->t('Platform Channel: ' . $t['display_name'] . ' Verified Merchant Network'), 0, 1, 'L');
     }
 
     public function saveToFile($filePath) {

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIR Annex A1 Multi-Platform E-Invoice Verification Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        body { background-color: #0b0f19; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .nav-pills .nav-link { color: #94a3b8; font-weight: 600; border-radius: 9999px; padding: 7px 18px; transition: all 0.2s; font-size: 0.84rem; border: 1px solid transparent; }
+        .nav-pills .nav-link:hover { color: #f8fafc; background: rgba(255,255,255,0.05); }
+        .nav-pills .nav-link.active.shopee-tab { background-color: #ee4d2d; color: #fff; box-shadow: 0 4px 14px rgba(238, 77, 45, 0.45); }
+        .nav-pills .nav-link.active.lazada-tab { background-color: #0f56fa; color: #fff; box-shadow: 0 4px 14px rgba(15, 86, 250, 0.45); }
+        .nav-pills .nav-link.active.tiktok-tab { background-color: #18181b; color: #25f4ee; border: 1px solid #3f3f46; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7); }
+        .nav-pills .nav-link.active.repro-tab { background-color: #f97316; color: #fff; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45); }
+        .nav-pills .nav-link.active.gallery-tab { background-color: #334155; color: #fff; }
+        
+        .pdf-card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid #334155;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        .canvas-single {
+            display: block;
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+            height: auto;
+        }
+        .canvas-grid {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="p-3">
+    <div class="container-fluid max-w-7xl">
+        <!-- Top Navigation & Controls -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 px-2">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fa-solid fa-file-invoice me-2 text-warning"></i>BIR Annex A1 Multi-Platform E-Invoice Verification</h4>
+                <p class="text-secondary small mb-0">Platform Brand Identity Themes & Spacing Harmonization Preview</p>
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <ul class="nav nav-pills bg-slate-900 p-1 rounded-pill border border-slate-800" id="previewTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active repro-tab" onclick="showSingle('shopee_user_order_reproduction.pdf', this)"><i class="fa-solid fa-check-circle me-1"></i> User Reproduction (Shopee)</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link shopee-tab" onclick="showSingle('shopee_preview.pdf', this)"><i class="fa-solid fa-bag-shopping me-1"></i> Shopee Orange</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link lazada-tab" onclick="showSingle('lazada_preview.pdf', this)"><i class="fa-solid fa-heart me-1"></i> Lazada Blue</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link tiktok-tab" onclick="showSingle('tiktok_shop_preview.pdf', this)"><i class="fa-brands fa-tiktok me-1"></i> TikTok Black</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link gallery-tab" onclick="showGallery(this)"><i class="fa-solid fa-table-cells-large me-1"></i> Side-by-Side Gallery</button>
+                    </li>
+                </ul>
+
+                <a href="../../index.php" class="btn btn-outline-light btn-sm rounded-pill px-3 ms-2">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to App
+                </a>
+            </div>
+        </div>
+
+        <div id="loadingStatus" class="text-center my-3 text-info" style="display:none;">
+            <i class="fa-solid fa-spinner fa-spin me-2"></i>Rendering PDF...
+        </div>
+
+        <!-- Single View Container -->
+        <div id="singleContainer" class="text-center">
+            <div class="pdf-card d-inline-block">
+                <canvas id="mainCanvas" class="canvas-single"></canvas>
+            </div>
+            <div class="mt-2 mb-4">
+                <a id="downloadDirectLink" href="shopee_user_order_reproduction.pdf" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="fa-solid fa-download me-1"></i> Open Direct PDF in New Tab
+                </a>
+            </div>
+        </div>
+
+        <!-- Side-by-Side Gallery Container -->
+        <div id="galleryContainer" class="row g-4" style="display:none;">
+            <div class="col-lg-4 col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="platform-badge" style="background:#fff1ee; color:#ee4d2d; border:1px solid #ee4d2d;"><i class="fa-solid fa-bag-shopping"></i> SHOPEE THEME (ORANGE)</span>
+                    <a href="shopee_preview.pdf" target="_blank" class="btn btn-xs btn-outline-secondary small py-0 px-2 rounded-pill"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                </div>
+                <div class="pdf-card">
+                    <canvas id="canvasShopee" class="canvas-grid"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="platform-badge" style="background:#eff6ff; color:#0f56fa; border:1px solid #0f56fa;"><i class="fa-solid fa-heart"></i> LAZADA THEME (BLUE)</span>
+                    <a href="lazada_preview.pdf" target="_blank" class="btn btn-xs btn-outline-secondary small py-0 px-2 rounded-pill"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                </div>
+                <div class="pdf-card">
+                    <canvas id="canvasLazada" class="canvas-grid"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="platform-badge" style="background:#18181b; color:#25f4ee; border:1px solid #3f3f46;"><i class="fa-brands fa-tiktok"></i> TIKTOK SHOP (BLACK)</span>
+                    <a href="tiktok_shop_preview.pdf" target="_blank" class="btn btn-xs btn-outline-secondary small py-0 px-2 rounded-pill"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                </div>
+                <div class="pdf-card">
+                    <canvas id="canvasTikTok" class="canvas-grid"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('loadingStatus');
+        const singleContainer = document.getElementById('singleContainer');
+        const galleryContainer = document.getElementById('galleryContainer');
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        const downloadLink = document.getElementById('downloadDirectLink');
+
+        function renderPageToCanvas(pdfUrl, targetCanvas, scale = 2.0) {
+            return pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+                return pdf.getPage(1);
+            }).then(page => {
+                const viewport = page.getViewport({ scale: scale });
+                targetCanvas.height = viewport.height;
+                targetCanvas.width = viewport.width;
+                const renderContext = {
+                    canvasContext: targetCanvas.getContext('2d'),
+                    viewport: viewport
+                };
+                return page.render(renderContext).promise;
+            });
+        }
+
+        function showSingle(file, btn) {
+            document.querySelectorAll('#previewTabs .nav-link').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            singleContainer.style.display = 'block';
+            galleryContainer.style.display = 'none';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Rendering ' + file + '...';
+            downloadLink.href = file;
+
+            renderPageToCanvas(file, mainCanvas, 2.0).then(() => {
+                statusEl.style.display = 'none';
+            }).catch(err => {
+                statusEl.innerHTML = '<span class="text-danger">' + err.message + '</span>';
+            });
+        }
+
+        function showGallery(btn) {
+            document.querySelectorAll('#previewTabs .nav-link').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            singleContainer.style.display = 'none';
+            galleryContainer.style.display = 'flex';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Rendering all platform themes...';
+
+            Promise.all([
+                renderPageToCanvas('shopee_preview.pdf', document.getElementById('canvasShopee'), 1.4),
+                renderPageToCanvas('lazada_preview.pdf', document.getElementById('canvasLazada'), 1.4),
+                renderPageToCanvas('tiktok_shop_preview.pdf', document.getElementById('canvasTikTok'), 1.4)
+            ]).then(() => {
+                statusEl.style.display = 'none';
+            }).catch(err => {
+                statusEl.innerHTML = '<span class="text-danger">' + err.message + '</span>';
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            showSingle('shopee_user_order_reproduction.pdf');
+        });
+    </script>
+</body>
+</html>
