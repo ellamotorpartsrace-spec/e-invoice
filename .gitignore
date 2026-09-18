@@ -1,4 +1,5 @@
 storage/invoices/*.pdf
+storage/invoices/*.zip
 !storage/invoices/.gitkeep
 storage/temp/*
 !storage/temp/.gitkeep
