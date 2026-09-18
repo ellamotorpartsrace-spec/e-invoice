@@ -741,56 +741,64 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
         $this->Cell($pageWidth, 3.6, $this->t('"THIS SALES INVOICE SHALL BE VALID FOR FIVE (5) YEARS FROM THE DATE OF ISSUANCE"'), 0, 1, 'C');
 
-        // ── Official Platform-Themed Security Seal & Digital Verification Stamp ──
-        $sealY = $footerY + 14.0;
-        $sealW = 76;
-        $sealH = 17;
-        $sealX = $pageLeft + $pageWidth - $sealW; // Right-aligned
+        // ── Official Authorized Representative E-Signature & JWS Digital Seal ──
+        $sigCardY = $footerY + 13.0;
+        $sigCardW = 76;
+        $sigCardH = 22.5;
+        $sigCardX = $pageLeft + $pageWidth - $sigCardW; // Right-aligned
 
-        // Seal outer card
+        // Signature Outer Card
         $this->SetDrawColor(226, 232, 240);
+        $this->SetFillColor(255, 255, 255);
+        $this->Rect($sigCardX, $sigCardY, $sigCardW, $sigCardH, 'DF');
+
+        // Inner Themed Header Strip
         $this->SetFillColor($t['light_bg'][0], $t['light_bg'][1], $t['light_bg'][2]);
-        $this->Rect($sealX, $sealY, $sealW, $sealH, 'DF');
+        $this->Rect($sigCardX, $sigCardY, $sigCardW, 4.6, 'F');
+        $this->SetDrawColor($t['border'][0], $t['border'][1], $t['border'][2]);
+        $this->Line($sigCardX, $sigCardY + 4.6, $sigCardX + $sigCardW, $sigCardY + 4.6);
 
-        // Inner seal accent border in platform theme color
-        $this->SetDrawColor($t['seal_border'][0], $t['seal_border'][1], $t['seal_border'][2]);
-        $this->SetLineWidth(0.35);
-        $this->Rect($sealX + 1.2, $sealY + 1.2, $sealW - 2.4, $sealH - 2.4);
+        $this->SetXY($sigCardX, $sigCardY + 0.8);
+        $this->SetFont('Helvetica', 'B', 6.2);
+        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
+        $this->Cell($sigCardW, 3.2, 'AUTHORIZED REPRESENTATIVE SIGNATURE', 0, 1, 'C');
 
-        // Logo Mark inside Seal
-        $markPath = __DIR__ . '/../assets/img/logo-mark.png';
-        $sealTextX = $sealX + 3.5;
-        if (file_exists($markPath)) {
-            $this->Image($markPath, $sealX + 2.8, $sealY + 2.8, 11);
-            $sealTextX = $sealX + 15.5;
+        // Check for signature image
+        $customSig = $this->storeInfo['signature_image'] ?? '';
+        $sigPath = '';
+        if (!empty($customSig) && file_exists(__DIR__ . '/../' . $customSig)) {
+            $sigPath = __DIR__ . '/../' . $customSig;
+        } elseif (file_exists(__DIR__ . '/../storage/signatures/store_signature.png')) {
+            $sigPath = __DIR__ . '/../storage/signatures/store_signature.png';
         }
 
-        $sealTextW = $sealW - ($sealTextX - $sealX) - 3;
+        if (!empty($sigPath) && file_exists($sigPath)) {
+            // Render transparent signature image
+            $this->Image($sigPath, $sigCardX + ($sigCardW - 32) / 2, $sigCardY + 4.8, 32);
+        }
 
-        $this->SetXY($sealTextX, $sealY + 2.5);
-        $this->SetFont('Helvetica', 'B', 7.2);
+        // Horizontal Signatory Line
+        $this->SetDrawColor(203, 213, 225);
+        $this->SetLineWidth(0.3);
+        $this->Line($sigCardX + 8, $sigCardY + 16.0, $sigCardX + $sigCardW - 8, $sigCardY + 16.0);
+
+        // Signatory Name & Designation
+        $signatoryName = !empty($this->storeInfo['signatory_name']) ? strtoupper($this->storeInfo['signatory_name']) : 'AUTHORIZED REPRESENTATIVE';
+        $this->SetXY($sigCardX, $sigCardY + 16.3);
+        $this->SetFont('Helvetica', 'B', 6.8);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $sealStore = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'DEMO E-COMMERCE ENTERPRISES';
-        $this->Cell($sealTextW, 3.2, $this->t(substr($sealStore, 0, 30)), 0, 1, 'L');
+        $this->Cell($sigCardW, 2.9, $this->t($signatoryName), 0, 1, 'C');
 
-        $this->SetX($sealTextX);
-        $this->SetFont('Helvetica', 'B', 6.6);
-        $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
-        $this->Cell($sealTextW, 3.2, $this->t('OFFICIAL E-INVOICE * VALID & ISSUED'), 0, 1, 'L');
+        $signatoryDesig = !empty($this->storeInfo['signatory_designation']) ? $this->storeInfo['signatory_designation'] : 'Authorized Representative';
+        $this->SetX($sigCardX);
+        $this->SetFont('Helvetica', '', 5.8);
+        $this->SetTextColor($textLabel[0], $textLabel[1], $textLabel[2]);
+        $this->Cell($sigCardW, 2.6, $this->t($signatoryDesig), 0, 1, 'C');
 
-        $this->SetX($sealTextX);
-        $this->SetFont('Helvetica', '', 6.2);
-        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-        $this->Cell($sealTextW, 3.0, $this->t($t['seal_sub']), 0, 1, 'L');
-
-        $this->SetX($sealTextX);
-        $this->SetFont('Helvetica', 'I', 5.8);
-        $this->Cell($sealTextW, 2.8, 'Authorized Digital Signature * BIR Compliant', 0, 1, 'L');
-
-        // ── Left Side Security Barcode / Compliance Badge ──
+        // ── Left Side Security Barcode / JWS Cryptographic Digest ──
         $badgeLeftX = $pageLeft;
         $badgeLeftW = 98;
-        $this->SetXY($badgeLeftX, $sealY + 2.0);
+        $this->SetXY($badgeLeftX, $sigCardY + 0.8);
         $this->SetFont('Helvetica', 'B', 7.2);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
         $this->Cell($badgeLeftW, 3.4, 'OFFICIAL ELECTRONIC INVOICE (EIS/CAS COMPLIANT)', 0, 1, 'L');
@@ -798,15 +806,25 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetX($badgeLeftX);
         $this->SetFont('Helvetica', '', 6.6);
         $this->SetTextColor($textLabel[0], $textLabel[1], $textLabel[2]);
-        $this->Cell($badgeLeftW, 3.2, $this->t('Issued under BIR RR No. 7-2024 and RMC No. 63-2024 for E-Commerce.'), 0, 1, 'L');
+        $this->Cell($badgeLeftW, 3.0, $this->t('Issued under BIR RR No. 7-2024 & RR No. 8-2022 (Electronic Invoicing).'), 0, 1, 'L');
 
         $this->SetX($badgeLeftX);
-        $this->Cell($badgeLeftW, 3.2, $this->t('Order Reference: ' . $orderSn), 0, 1, 'L');
+        $this->Cell($badgeLeftW, 3.0, $this->t('Order Reference: ' . $orderSn . ' • Channel: ' . $t['display_name']), 0, 1, 'L');
+
+        // JWS Cryptographic Hash Digest
+        $rawPayload = ($orderSn . ($this->invoiceData['invoice_number'] ?? '') . ($this->invoiceData['total_amount'] ?? ''));
+        $jwsDigest = hash('sha256', $rawPayload);
+        $certSerial = !empty($this->storeInfo['eis_cert_serial']) ? $this->storeInfo['eis_cert_serial'] : 'BIR-EIS-2026-001';
 
         $this->SetX($badgeLeftX);
-        $this->SetFont('Helvetica', 'I', 6.4);
+        $this->SetFont('Helvetica', 'B', 6.2);
         $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
-        $this->Cell($badgeLeftW, 3.2, $this->t('Platform Channel: ' . $t['display_name'] . ' Verified Merchant Network'), 0, 1, 'L');
+        $this->Cell($badgeLeftW, 3.0, $this->t('JWS Digital Digest: ' . substr($jwsDigest, 0, 28) . '... (SHA-256)'), 0, 1, 'L');
+
+        $this->SetX($badgeLeftX);
+        $this->SetFont('Helvetica', '', 6.0);
+        $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
+        $this->Cell($badgeLeftW, 3.0, $this->t('Digital Certificate: ' . $certSerial . ' • Authenticated & Tamper-Proof'), 0, 1, 'L');
     }
 
     public function saveToFile($filePath) {

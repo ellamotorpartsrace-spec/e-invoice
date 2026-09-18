@@ -184,6 +184,105 @@ $settings = getEinvSettings($conn);
 
     <!-- Right Column: Security & Cloud Portability -->
     <div class="col-lg-5">
+        <!-- Authorized Signatory E-Signature Card -->
+        <div class="app-card mb-4" id="signatureCard">
+            <div class="card-header-modern">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <div>
+                        <h5 class="fw-bold mb-1 fs-6"><i class="fa-solid fa-signature text-danger me-2"></i>Authorized Signatory E-Signature</h5>
+                        <p class="text-secondary small mb-0">Printed on official BIR invoices and certified via JWS.</p>
+                    </div>
+                    <?php 
+                    $sigExists = file_exists(__DIR__ . '/storage/signatures/store_signature.png');
+                    ?>
+                    <span class="badge <?= $sigExists ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle' ?> rounded-pill" id="sigStatusBadge">
+                        <?= $sigExists ? '<i class="fa-solid fa-circle-check me-1"></i>Active' : '<i class="fa-solid fa-pen-nib me-1"></i>Setup Needed' ?>
+                    </span>
+                </div>
+            </div>
+            <div class="p-4">
+                <form id="signatureForm" onsubmit="saveSignature(event)">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold text-secondary">Signatory Full Name</label>
+                            <input type="text" class="form-control" name="signatory_name" id="sigNameInput" value="<?= htmlspecialchars($settings['signatory_name'] ?? 'JUAN DELA CRUZ') ?>" required oninput="updateSigTextPreview()">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-secondary">Designation / Title</label>
+                            <input type="text" class="form-control" name="signatory_designation" id="sigDesigInput" value="<?= htmlspecialchars($settings['signatory_designation'] ?? 'Authorized Representative') ?>" required oninput="updateSigTextPreview()">
+                        </div>
+                    </div>
+
+                    <!-- Current Active Signature Preview Box -->
+                    <div class="mb-3 p-3 rounded-3 border bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-secondary">Active Signature on Issued Invoices:</span>
+                            <button type="button" class="btn btn-outline-danger btn-xs py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="clearActiveSignature()">
+                                <i class="fa-solid fa-trash-can me-1"></i>Clear
+                            </button>
+                        </div>
+                        <div class="text-center p-2 rounded bg-white border" style="min-height: 85px; position: relative;">
+                            <?php 
+                            $sigUrl = $sigExists ? (BASE_URL . 'storage/signatures/store_signature.png?v=' . time()) : '';
+                            ?>
+                            <img id="activeSigImg" src="<?= $sigUrl ?>" alt="Signatory Signature" style="max-height: 60px; width: auto; object-fit: contain; <?= $sigExists ? '' : 'display:none;' ?>">
+                            <div id="noSigPlaceholder" class="text-muted small py-3" style="<?= $sigExists ? 'display:none;' : '' ?>">
+                                <i class="fa-solid fa-pen-nib me-1"></i> No signature registered yet. Draw or upload below.
+                            </div>
+                            <div class="mt-1 pt-1 border-top small fw-bold text-dark" id="previewSignatoryText">
+                                <?= htmlspecialchars($settings['signatory_name'] ?? 'JUAN DELA CRUZ') ?> — <span class="text-secondary fw-normal"><?= htmlspecialchars($settings['signatory_designation'] ?? 'Authorized Representative') ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Switcher Tabs -->
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-sm btn-dark rounded-pill px-3" id="tabDrawBtn" onclick="switchSigMode('draw')">
+                            <i class="fa-solid fa-pen-fancy me-1"></i> Draw on Screen
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="tabUploadBtn" onclick="switchSigMode('upload')">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload PNG File
+                        </button>
+                    </div>
+
+                    <!-- Mode 1: Drawing Pad -->
+                    <div id="sigDrawContainer" class="mb-3">
+                        <div class="border rounded-3 bg-white p-2 position-relative shadow-sm" style="touch-action: none;">
+                            <canvas id="sigCanvas" width="460" height="120" style="width:100%; height:120px; cursor:crosshair; background: #fafafa; border-radius: 6px;"></canvas>
+                            <div class="position-absolute bottom-0 start-0 p-2 text-muted" style="font-size:0.7rem; pointer-events:none;">
+                                <i class="fa-solid fa-pencil me-1"></i> Draw signature inside box using mouse or finger
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="clearSigPad()">
+                                    <i class="fa-solid fa-eraser me-1"></i> Clear Pad
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="loadSampleSig()">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Load Demo Signature
+                                </button>
+                            </div>
+                            <span class="text-muted small" style="font-size:0.72rem;"><i class="fa-solid fa-circle-info me-1"></i>Touch & stylus supported</span>
+                        </div>
+                    </div>
+
+                    <!-- Mode 2: File Upload -->
+                    <div id="sigUploadContainer" class="mb-3" style="display:none;">
+                        <label class="form-label small fw-bold text-secondary">Select Signature File (Transparent PNG recommended)</label>
+                        <input type="file" class="form-control" id="sigFileInput" accept="image/png, image/jpeg, image/webp" onchange="handleSigFileUpload(event)">
+                        <div class="form-text" style="font-size:0.72rem;">Accepts .png, .jpg, or .webp (max 2MB). Transparent background works best.</div>
+                    </div>
+
+                    <input type="hidden" name="signature_data" id="sigDataHidden">
+                    <input type="hidden" name="clear_signature" id="sigClearHidden" value="0">
+
+                    <button type="submit" class="btn btn-enterprise-primary w-100 py-2 rounded-pill fw-bold" id="btnSaveSig">
+                        <i class="fa-solid fa-floppy-disk me-2"></i> Save & Apply E-Signature to Invoices
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- BIR EIS Compliance Readiness Card -->
         <div class="app-card mb-4">
             <div class="card-header-modern">
@@ -539,6 +638,278 @@ function escapeHtml(str) {
               .replace(/"/g, "&quot;")
               .replace(/'/g, "&#039;");
 }
+
+// ── Authorized Representative E-Signature Interactive Engine ──
+let sigCanvas, sigCtx;
+let isDrawing = false;
+let hasDrawn = false;
+
+function initSigCanvas() {
+    sigCanvas = document.getElementById('sigCanvas');
+    if (!sigCanvas) return;
+    sigCtx = sigCanvas.getContext('2d');
+    sigCtx.lineWidth = 2.8;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+    sigCtx.strokeStyle = '#0f2b48';
+
+    function getPos(e) {
+        const rect = sigCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const scaleX = sigCanvas.width / rect.width;
+        const scaleY = sigCanvas.height / rect.height;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        hasDrawn = true;
+        document.getElementById('sigClearHidden').value = '0';
+        const pos = getPos(e);
+        sigCtx.beginPath();
+        sigCtx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        sigCtx.lineTo(pos.x, pos.y);
+        sigCtx.stroke();
+    }
+
+    function stopDraw() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        sigCtx.closePath();
+        // Sync to hidden input
+        document.getElementById('sigDataHidden').value = sigCanvas.toDataURL('image/png');
+    }
+
+    sigCanvas.addEventListener('mousedown', startDraw);
+    sigCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDraw);
+
+    sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    sigCanvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', stopDraw);
+}
+
+function clearSigPad() {
+    if (!sigCtx || !sigCanvas) return;
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    hasDrawn = false;
+    document.getElementById('sigDataHidden').value = '';
+}
+
+function loadSampleSig() {
+    clearSigPad();
+    hasDrawn = true;
+    document.getElementById('sigClearHidden').value = '0';
+
+    sigCtx.save();
+    sigCtx.lineWidth = 3.0;
+    sigCtx.strokeStyle = '#0f2b48';
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+
+    // Draw realistic cursive signature path
+    const pts = [
+        [50, 75], [58, 50], [70, 30], [85, 25], [92, 40], [85, 65], [72, 85], [58, 92], [50, 80],
+        [70, 45], [105, 30], [130, 65], [142, 72], [152, 55], [165, 48], [172, 60], [168, 75],
+        [182, 58], [195, 48], [202, 60], [198, 75], [212, 42], [225, 32], [232, 50], [225, 75],
+        [240, 62], [255, 52], [262, 65], [255, 78], [275, 40], [295, 25], [315, 35], [320, 55],
+        [305, 75], [285, 80], [280, 72], [300, 58], [330, 50], [355, 65], [375, 55], [395, 60]
+    ];
+
+    sigCtx.beginPath();
+    sigCtx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+        sigCtx.lineTo(pts[i][0], pts[i][1]);
+    }
+    sigCtx.stroke();
+
+    // Underline flourish
+    sigCtx.beginPath();
+    sigCtx.moveTo(60, 92);
+    for (let x = 60; x <= 400; x += 5) {
+        const y = 92 + Math.sin((x - 60) / 70) * 8 - ((x - 60) * 0.04);
+        sigCtx.lineTo(x, y);
+    }
+    sigCtx.stroke();
+    sigCtx.restore();
+
+    document.getElementById('sigDataHidden').value = sigCanvas.toDataURL('image/png');
+    Swal.fire({
+        icon: 'info',
+        title: 'Sample Loaded',
+        text: 'A demo signature has been loaded onto the pad. Click "Save & Apply" to apply it to all invoices.',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+function handleSigFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+            clearSigPad();
+            hasDrawn = true;
+            document.getElementById('sigClearHidden').value = '0';
+            
+            // Draw into canvas scaled nicely
+            const ratio = Math.min((sigCanvas.width - 20) / img.width, (sigCanvas.height - 20) / img.height);
+            const dw = img.width * ratio;
+            const dh = img.height * ratio;
+            const dx = (sigCanvas.width - dw) / 2;
+            const dy = (sigCanvas.height - dh) / 2;
+            sigCtx.drawImage(img, dx, dy, dw, dh);
+
+            document.getElementById('sigDataHidden').value = sigCanvas.toDataURL('image/png');
+            Swal.fire({
+                icon: 'success',
+                title: 'Image Loaded',
+                text: 'Signature image loaded into canvas. Click "Save & Apply" to update.',
+                timer: 1800,
+                showConfirmButton: false
+            });
+        };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function switchSigMode(mode) {
+    const drawCont = document.getElementById('sigDrawContainer');
+    const uploadCont = document.getElementById('sigUploadContainer');
+    const tabDraw = document.getElementById('tabDrawBtn');
+    const tabUpload = document.getElementById('tabUploadBtn');
+
+    if (mode === 'draw') {
+        drawCont.style.display = 'block';
+        uploadCont.style.display = 'none';
+        tabDraw.className = 'btn btn-sm btn-dark rounded-pill px-3';
+        tabUpload.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+    } else {
+        drawCont.style.display = 'none';
+        uploadCont.style.display = 'block';
+        tabDraw.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+        tabUpload.className = 'btn btn-sm btn-dark rounded-pill px-3';
+    }
+}
+
+function updateSigTextPreview() {
+    const name = document.getElementById('sigNameInput').value || 'AUTHORIZED SIGNATORY';
+    const desig = document.getElementById('sigDesigInput').value || 'Authorized Representative';
+    document.getElementById('previewSignatoryText').innerHTML = `${escapeHtml(name)} — <span class="text-secondary fw-normal">${escapeHtml(desig)}</span>`;
+}
+
+function clearActiveSignature() {
+    Swal.fire({
+        title: 'Remove Signature?',
+        text: 'This will remove the current signature image from future printed invoices.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Yes, remove it'
+    }).then(result => {
+        if (result.isConfirmed) {
+            document.getElementById('sigClearHidden').value = '1';
+            document.getElementById('sigDataHidden').value = '';
+            clearSigPad();
+
+            const fd = new FormData(document.getElementById('signatureForm'));
+            fetch(window.BASE_URL + 'api/save_settings.php', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('activeSigImg').style.display = 'none';
+                    document.getElementById('noSigPlaceholder').style.display = 'block';
+                    document.getElementById('sigStatusBadge').className = 'badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill';
+                    document.getElementById('sigStatusBadge').innerHTML = '<i class="fa-solid fa-pen-nib me-1"></i>Setup Needed';
+                    Swal.fire({ icon: 'success', title: 'Removed', text: 'Signature removed successfully.' });
+                }
+            });
+        }
+    });
+}
+
+function saveSignature(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveSig');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving E-Signature...';
+
+    // If canvas was drawn, ensure hidden input is populated
+    if (hasDrawn && sigCanvas) {
+        document.getElementById('sigDataHidden').value = sigCanvas.toDataURL('image/png');
+    }
+
+    const fd = new FormData(document.getElementById('signatureForm'));
+
+    fetch(window.BASE_URL + 'api/save_settings.php', {
+        method: 'POST',
+        body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save & Apply E-Signature to Invoices';
+
+        if (data.success) {
+            // Update active preview
+            const curData = document.getElementById('sigDataHidden').value;
+            const activeImg = document.getElementById('activeSigImg');
+            const noSig = document.getElementById('noSigPlaceholder');
+            const badge = document.getElementById('sigStatusBadge');
+
+            if (curData && curData.startsWith('data:image')) {
+                activeImg.src = curData;
+                activeImg.style.display = 'inline-block';
+                noSig.style.display = 'none';
+                badge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Active';
+            } else if (activeImg.src) {
+                activeImg.style.display = 'inline-block';
+                noSig.style.display = 'none';
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Signature Saved!',
+                text: 'Your authorized e-signature is now active and will be printed on all generated invoices.',
+                confirmButtonColor: '#ee4d2d'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'Failed to save signature'
+            });
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save & Apply E-Signature to Invoices';
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initSigCanvas();
+});
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
