@@ -578,7 +578,7 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
 
         $this->SetXY($pageLeft + 3, $taxBoxY + 7.5);
-        $this->Cell(48, $rowH, ' VATable Sales', 0, 0, 'L');
+        $this->Cell(48, $rowH, ' VATable Sales (Net of VAT)', 0, 0, 'L');
         $this->Cell(35, $rowH, 'PHP ' . $this->money($vatableSales), 0, 1, 'R');
 
         $this->SetX($pageLeft + 3);
@@ -633,40 +633,53 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetXY($rightX + 3, $taxBoxY + 1.2);
         $this->SetFont('Helvetica', 'B', 7.8);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell($rightW - 6, 4.0, 'PAYMENT & TAX COMPUTATION (SEC. 9)', 0, 1, 'L');
+        $this->Cell($rightW - 6, 4.0, 'PAYMENT & SETTLEMENT SUMMARY (SEC. 9)', 0, 1, 'L');
 
-        // Direct, high-clarity financial rows (no confusing round-trip additions)
-        $rRowH = 4.4;
+        // Clear, intuitive commercial calculations: Gross - Discounts + Shipping = Net Payable
+        $rRowH = 5.0;
         $this->SetFont('Helvetica', '', 8.0);
         $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
 
-        $this->SetXY($rightX + 3, $taxBoxY + 7.2);
-        $this->Cell(52, $rRowH, ' Total Sales (VAT Inclusive)', 0, 0, 'L');
+        // Row 1: Gross Sales
+        $this->SetXY($rightX + 3, $taxBoxY + 7.0);
+        $this->Cell(52, $rRowH, ' Gross Sales (VAT Inclusive)', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($totalSalesGross), 0, 1, 'R');
 
+        // Row 2: Discounts
         $this->SetX($rightX + 3);
         $this->Cell(52, $rRowH, ' Less: Promotional Discounts', 0, 0, 'L');
         if ($discountAmount > 0) {
             $this->SetFont('Helvetica', 'B', 8.0);
             $this->SetTextColor(225, 29, 72);
-            $this->Cell(34, $rRowH, '-' . $this->money($discountAmount), 0, 1, 'R');
+            $this->Cell(34, $rRowH, '-PHP ' . $this->money($discountAmount), 0, 1, 'R');
             $this->SetFont('Helvetica', '', 8.0);
             $this->SetTextColor($textPrimary[0], $textPrimary[1], $textPrimary[2]);
         } else {
             $this->Cell(34, $rRowH, '0.00', 0, 1, 'R');
         }
 
+        // Row 3: Shipping / Delivery Fee
         $this->SetX($rightX + 3);
-        $this->Cell(52, $rRowH, ' Amount : Net of Discounts', 0, 0, 'L');
+        $this->Cell(52, $rRowH, ' Add: Shipping & Handling Fee', 0, 0, 'L');
+        if ($shippingFee > 0) {
+            $this->Cell(34, $rRowH, 'PHP ' . $this->money($shippingFee), 0, 1, 'R');
+        } else {
+            $this->Cell(34, $rRowH, '0.00', 0, 1, 'R');
+        }
+
+        // Row 4: Net Settlement Amount
+        $this->SetX($rightX + 3);
+        $this->SetFont('Helvetica', 'B', 8.2);
+        $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
+        $this->Cell(52, $rRowH, ' Net Settlement Amount', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($grandTotal), 0, 1, 'R');
 
+        // Row 5: Explicit notification that 12% VAT is already included above
         $this->SetX($rightX + 3);
-        $this->Cell(52, $rRowH, ' Less: 12% VAT (included)', 0, 0, 'L');
+        $this->SetFont('Helvetica', 'I', 7.4);
+        $this->SetTextColor($textLabel[0], $textLabel[1], $textLabel[2]);
+        $this->Cell(52, $rRowH, ' (12% VAT Portion Included Above)', 0, 0, 'L');
         $this->Cell(34, $rRowH, 'PHP ' . $this->money($vatAmount), 0, 1, 'R');
-
-        $this->SetX($rightX + 3);
-        $this->Cell(52, $rRowH, ' Amount : Net of VAT', 0, 0, 'L');
-        $this->Cell(34, $rRowH, 'PHP ' . $this->money($vatableSales), 0, 1, 'R');
 
         // TOTAL AMOUNT DUE Themed Identity Bar
         $dueBarY = $taxBoxY + 33.2;
