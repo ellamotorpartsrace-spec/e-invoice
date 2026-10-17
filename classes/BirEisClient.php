@@ -303,9 +303,9 @@ class BirEisClient {
                 "Tin"        => $sellerTin,
                 "BranchCd"   => $sellerBranch,
                 "Type"       => (string)$sellerType,
-                "RegNm"      => $this->getSetting('store_name', 'DEMO E-COMMERCE ENTERPRISES'),
-                "BusinessNm" => $this->getSetting('store_name', 'DEMO E-COMMERCE ENTERPRISES'),
-                "Email"      => $this->getSetting('store_email', 'taxpayer@example.com'),
+                "RegNm"      => $this->getSetting('store_name', 'ELLA MOTORPARTS RACE-SPEC'),
+                "BusinessNm" => $this->getSetting('store_name', 'ELLA MOTORPARTS RACE-SPEC'),
+                "Email"      => $this->getSetting('store_email', 'ellamotorparts@gmail.com'),
                 "RegAddr"    => $this->getSetting('store_address', '123 Commercial Ave., Ortigas Center, Pasig City')
             ],
             "BuyerInfo" => [

@@ -35,7 +35,7 @@ $settings = getEinvSettings($conn);
                     <div class="row g-3 mb-3">
                         <div class="col-md-5">
                             <label class="form-label small fw-bold text-secondary">Registered Business Name (as on BIR 2303)</label>
-                            <input type="text" class="form-control" name="store_name" value="<?= htmlspecialchars($settings['store_name'] ?? 'DEMO E-COMMERCE ENTERPRISES') ?>" required>
+                            <input type="text" class="form-control" name="store_name" value="<?= htmlspecialchars($settings['store_name'] ?? 'ELLA MOTORPARTS RACE-SPEC') ?>" required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-bold text-secondary">VAT Status</label>

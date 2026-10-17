@@ -21,7 +21,7 @@ $settings = getEinvSettings($conn);
     </div>
     <div class="d-flex gap-2">
         <a href="<?= BASE_URL ?>history.php" class="btn btn-outline-secondary btn-sm px-3 rounded-pill fw-semibold shadow-xs">
-            <i class="fa-solid fa-box-archive me-1"></i> View Invoices History
+            <i class="fa-solid fa-file-invoice me-1"></i> View Invoices Archive
         </a>
     </div>
 </div>
@@ -58,7 +58,7 @@ $settings = getEinvSettings($conn);
         </div>
         <div>
             <div class="text-secondary small" style="font-size:0.7rem; font-weight:700; text-transform:uppercase;">Registered Business</div>
-            <div class="fw-bold small"><?= htmlspecialchars($settings['store_name'] ?? 'DEMO E-COMMERCE ENTERPRISES') ?></div>
+            <div class="fw-bold small"><?= htmlspecialchars($settings['store_name'] ?? 'ELLA MOTORPARTS RACE-SPEC') ?></div>
         </div>
     </div>
     <div class="info-item">

@@ -1,7 +1,7 @@
 <?php
 // login.php
-// Modern Glassmorphic Login Gateway
-// E-Invoice Management Portal | Developed by: Lester Bucag
+// Electronic Invoicing Portal — Sign In Gateway
+// ELLA MOTOR PARTS | Developed by: Lester Bucag
 require_once __DIR__ . '/config/config.php';
 
 if (isEinvLoggedIn()) {
@@ -10,11 +10,11 @@ if (isEinvLoggedIn()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — Electronic Invoicing Portal</title>
+    <title>Sign In — ELLA MOTOR PARTS | BIR E-Invoice Portal</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/img/logo-mark.png?v=<?= file_exists(__DIR__ . '/assets/img/logo-mark.png') ? filemtime(__DIR__ . '/assets/img/logo-mark.png') : '2.0' ?>">
@@ -22,138 +22,184 @@ if (isEinvLoggedIn()) {
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap & FontAwesome -->
+    <!-- Bootstrap & FontAwesome 6 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 
     <style>
-        :root {
-            --brand-red: #e52319;
-            --brand-red-dark: #b91c1c;
-            --brand-gold: #f59e0b;
-            --brand-accent: #2563eb;
-            --brand-accent-dark: #1d4ed8;
-            
-            /* Rich contrast light background (not purely white) */
-            --bg-page: #edf2f7;
-            --bg-card: #ffffff;
-            --border-card: rgba(203, 213, 225, 0.7);
-            --border-hover: #94a3b8;
-            
-            --text-main: #0f172a;
-            --text-label: #334155;
-            --text-muted: #64748b;
-            --text-soft: #94a3b8;
-            
-            --input-bg: #f8fafc;
-            --input-border: #cbd5e1;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        :root {
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+            --racing-ribbon: linear-gradient(90deg, #e11d2a 0%, #ea580c 50%, #f59e0b 100%);
+            --btn-racing-red: linear-gradient(180deg, #ed3524 0%, #db2212 100%);
+        }
+
+        /* ── Light Mode (Default) ── */
+        [data-theme="light"] {
+            --bg-page: #f8fafc;
+            --bg-grid-color: rgba(148, 163, 184, 0.13);
+            --bg-glow: none;
+            
+            --bg-card: #ffffff;
+            --card-border: rgba(226, 232, 240, 0.85);
+            --card-shadow: 0 22px 45px -12px rgba(15, 23, 42, 0.07), 0 4px 16px -2px rgba(15, 23, 42, 0.03);
+            
+            --text-title: #0f172a;
+            --text-label: #334155;
+            --text-muted: #94a3b8;
+            --text-footer-main: #475569;
+            --text-footer-bold: #1e293b;
+            
+            --badge-bg: #fef2f2;
+            --badge-border: #fee2e2;
+            --badge-text: #e11d2a;
+            
+            --input-bg: #f8fafc;
+            --input-border: #e2e8f0;
+            --input-border-hover: #cbd5e1;
+            --input-text: #0f172a;
+            --input-focus-bg: #ffffff;
+            --input-focus-border: #ff705a;
+            --input-focus-ring: rgba(255, 112, 90, 0.2);
+            --input-icon: #94a3b8;
+            --input-icon-focus: #ff5733;
+            
+            --toggle-bg: #ffffff;
+            --toggle-border: #e2e8f0;
+            --toggle-color: #475569;
+            --toggle-hover-bg: #f1f5f9;
+            --toggle-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+            
+            --logo-drop-shadow: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
+            --btn-shadow: 0 10px 22px -3px rgba(234, 43, 28, 0.48);
+            --btn-shadow-hover: 0 14px 26px -3px rgba(234, 43, 28, 0.6);
+        }
+
+        /* ── Dark Mode ── */
+        [data-theme="dark"] {
+            --bg-page: #0b0d14;
+            --bg-grid-color: rgba(255, 255, 255, 0.035);
+            --bg-glow: radial-gradient(circle at 50% 38%, rgba(225, 29, 42, 0.14) 0%, rgba(234, 88, 12, 0.06) 42%, transparent 72%);
+            
+            --bg-card: #131622;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+            
+            --text-title: #ffffff;
+            --text-label: #cbd5e1;
+            --text-muted: #64748b;
+            --text-footer-main: #64748b;
+            --text-footer-bold: #cbd5e1;
+            
+            --badge-bg: rgba(225, 29, 42, 0.14);
+            --badge-border: rgba(225, 29, 42, 0.28);
+            --badge-text: #fca5a5;
+            
+            --input-bg: #191d2c;
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-border-hover: rgba(255, 255, 255, 0.18);
+            --input-text: #ffffff;
+            --input-focus-bg: #191d2c;
+            --input-focus-border: #ff705a;
+            --input-focus-ring: rgba(255, 112, 90, 0.25);
+            --input-icon: #64748b;
+            --input-icon-focus: #ff5733;
+            
+            --toggle-bg: #191d2c;
+            --toggle-border: rgba(255, 255, 255, 0.12);
+            --toggle-color: #f1f5f9;
+            --toggle-hover-bg: #22273b;
+            --toggle-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            
+            --logo-drop-shadow: drop-shadow(0 4px 14px rgba(225, 29, 42, 0.35));
+            --btn-shadow: 0 10px 24px -3px rgba(234, 43, 28, 0.55);
+            --btn-shadow-hover: 0 14px 28px -3px rgba(234, 43, 28, 0.7);
+        }
+
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: var(--font-body);
             background-color: var(--bg-page);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(229, 35, 25, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(238, 77, 45, 0.09) 0px, transparent 50%),
-                radial-gradient(at 50% 50%, rgba(245, 158, 11, 0.05) 0px, transparent 50%);
+                var(--bg-glow),
+                linear-gradient(to right, var(--bg-grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--bg-grid-color) 1px, transparent 1px);
+            background-size: auto, 32px 32px, 32px 32px;
             background-attachment: fixed;
-            color: var(--text-main);
+            color: var(--text-title);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1.25rem;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* ── Top-Right Theme Toggle Button ── */
+        .theme-toggle-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--toggle-bg);
+            border: 1px solid var(--toggle-border);
+            color: var(--toggle-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            overflow-x: hidden;
-            padding: 2rem 1rem;
+            cursor: pointer;
+            font-size: 1.05rem;
+            box-shadow: var(--toggle-shadow);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 50;
         }
 
-        /* Ambient Glowing Accents */
-        .ambient-glow {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.65;
-            animation: pulseGlow 12s ease-in-out infinite alternate;
+        .theme-toggle-btn:hover {
+            background: var(--toggle-hover-bg);
+            transform: scale(1.08) rotate(12deg);
         }
 
-        .ambient-glow-1 {
-            width: 480px;
-            height: 480px;
-            top: -120px;
-            left: -80px;
-            background: radial-gradient(circle, rgba(229, 35, 25, 0.16) 0%, transparent 70%);
+        .theme-toggle-btn:active {
+            transform: scale(0.95);
         }
 
-        .ambient-glow-2 {
-            width: 520px;
-            height: 520px;
-            bottom: -140px;
-            right: -80px;
-            background: radial-gradient(circle, rgba(238, 77, 45, 0.15) 0%, rgba(245, 158, 11, 0.08) 70%);
-            animation-delay: -6s;
-        }
-
-        @keyframes pulseGlow {
-            0% { transform: scale(1) translateY(0); opacity: 0.55; }
-            50% { transform: scale(1.1) translateY(-16px); opacity: 0.75; }
-            100% { transform: scale(1) translateY(0); opacity: 0.55; }
-        }
-
-        /* Elegant Micro Dot Grid */
-        .grid-overlay {
-            position: fixed;
-            inset: 0;
-            background-image: radial-gradient(rgba(100, 116, 139, 0.18) 1px, transparent 1px);
-            background-size: 24px 24px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Main Container */
+        /* ── Centered Card Wrapper ── */
         .login-wrapper {
-            position: relative;
-            z-index: 2;
             width: 100%;
-            max-width: 460px;
-            animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 440px;
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideUpFade {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Premium White Floating Card with High Contrast */
+        /* ── Floating Card ── */
         .login-card {
             background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 24px;
-            padding: 2.75rem 2.5rem 2.25rem;
-            box-shadow: 
-                0 25px 50px -12px rgba(15, 23, 42, 0.14),
-                0 4px 16px -2px rgba(15, 23, 42, 0.06),
-                0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 2.5rem 2.5rem 2.5rem;
+            box-shadow: var(--card-shadow);
             position: relative;
             overflow: hidden;
+            transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
 
-        /* Top Accent Racing Gradient Ribbon */
+        /* Top Racing Gradient Ribbon */
         .login-card::before {
             content: '';
             position: absolute;
@@ -161,79 +207,80 @@ if (isEinvLoggedIn()) {
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #e52319 0%, #ee4d2d 50%, #f59e0b 100%);
+            background: var(--racing-ribbon);
         }
 
-        /* Brand Logo Area */
+        /* ── Brand Header (Tightly Spaced) ── */
         .brand-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.65rem;
         }
 
-        .logo-img-wrapper {
+        .logo-img-box {
             display: inline-block;
-            padding: 0.5rem;
-            position: relative;
-            margin-bottom: 0.85rem;
-            transition: transform 0.3s ease;
+            margin-bottom: 0.65rem;
+            transition: transform 0.25s ease;
         }
 
-        .logo-img-wrapper:hover {
-            transform: scale(1.03);
+        .logo-img-box:hover {
+            transform: scale(1.02);
         }
 
         .logo-img {
-            max-width: 250px;
+            max-width: 235px;
             height: auto;
             display: block;
             margin: 0 auto;
-            filter: drop-shadow(0 4px 12px rgba(229, 35, 25, 0.15));
+            filter: var(--logo-drop-shadow);
+            transition: filter 0.25s ease;
         }
 
-        /* Electronic Invoicing Portal Badge */
+        /* Portal Pill Badge (Snug below logo) */
         .portal-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.45rem;
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid rgba(37, 99, 235, 0.25);
-            padding: 0.35rem 0.95rem;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            border: 1px solid var(--badge-border);
+            padding: 0.35rem 1rem;
             border-radius: 999px;
             font-size: 0.76rem;
             font-weight: 600;
-            letter-spacing: 0.02em;
-            margin-bottom: 0.85rem;
+            letter-spacing: 0.01em;
+            margin-bottom: 1rem;
+            transition: all 0.25s ease;
         }
 
         .portal-badge i {
-            color: #2563eb;
-            font-size: 0.82rem;
+            color: var(--badge-text);
+            font-size: 0.8rem;
         }
 
         .login-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.55rem;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
+            font-family: var(--font-heading);
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.025em;
             margin-bottom: 0;
+            line-height: 1.2;
+            transition: color 0.25s ease;
         }
 
-        /* Inputs & Form */
+        /* ── Form Inputs ── */
         .form-group {
             margin-bottom: 1.35rem;
         }
 
-        .form-label-custom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.84rem;
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-label);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.48rem;
             letter-spacing: 0.01em;
+            transition: color 0.25s ease;
         }
 
         .input-box {
@@ -244,104 +291,106 @@ if (isEinvLoggedIn()) {
 
         .input-icon {
             position: absolute;
-            left: 1.1rem;
-            color: #94a3b8;
+            left: 1.15rem;
+            color: var(--input-icon);
             font-size: 1rem;
             pointer-events: none;
-            transition: color 0.25s ease;
+            transition: color 0.2s ease;
             z-index: 3;
         }
 
         .form-control-custom {
             width: 100%;
-            height: 48px;
+            height: 50px;
             background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 12px;
-            padding: 0.75rem 1.1rem 0.75rem 2.85rem;
-            color: var(--text-main);
+            border: 1.5px solid var(--input-border);
+            border-radius: 14px;
+            padding: 0.7rem 1.15rem 0.7rem 2.95rem;
+            color: var(--input-text);
             font-size: 0.92rem;
             font-family: inherit;
-            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .form-control-custom.has-toggle {
+            padding-right: 2.95rem;
+        }
+
+        .form-control-custom::placeholder {
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
 
         .form-control-custom:hover {
-            border-color: var(--border-hover);
-            background: #ffffff;
+            border-color: var(--input-border-hover);
         }
 
         .form-control-custom:focus {
             outline: none;
-            background: #ffffff;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14), 0 2px 8px rgba(0,0,0,0.04);
-            color: var(--text-main);
+            background: var(--input-focus-bg);
+            border: 2px solid var(--input-focus-border);
+            box-shadow: 0 0 0 4px var(--input-focus-ring);
+            color: var(--input-text);
         }
 
         .form-control-custom:focus + .input-icon,
         .input-box:focus-within .input-icon {
-            color: #2563eb;
+            color: var(--input-icon-focus);
         }
 
-        .form-control-custom::placeholder {
-            color: #94a3b8;
-            font-size: 0.88rem;
-        }
-
-        /* Password Toggle */
+        /* Password Visibility Toggle */
         .password-toggle-btn {
             position: absolute;
-            right: 0.75rem;
+            right: 0.85rem;
             background: none;
             border: none;
-            color: #94a3b8;
-            padding: 0.4rem 0.6rem;
+            color: var(--input-icon);
+            padding: 0.4rem;
             cursor: pointer;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
+            border-radius: 6px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
             z-index: 3;
         }
 
         .password-toggle-btn:hover {
-            color: #334155;
-            background: rgba(0, 0, 0, 0.05);
+            color: var(--input-text);
         }
 
-        /* Login Button */
+        /* ── Submit Action Button ── */
         .btn-submit {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--font-heading);
             width: 100%;
             height: 50px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #2563eb 100%);
-            background-size: 200% auto;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
+            background: var(--btn-racing-red);
+            border: none;
+            border-radius: 14px;
             color: #ffffff;
-            font-size: 1rem;
+            font-size: 1.02rem;
             font-weight: 700;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.01em;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.6rem;
+            gap: 0.65rem;
             cursor: pointer;
-            box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.35);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            margin-top: 1.5rem;
+            box-shadow: var(--btn-shadow);
+            margin-top: 1.85rem;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .btn-submit:hover {
-            background-position: right center;
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.45);
+            box-shadow: var(--btn-shadow-hover);
             color: #ffffff;
         }
 
         .btn-submit:active {
             transform: translateY(1px);
-            box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.3);
+            box-shadow: 0 4px 12px -2px rgba(234, 43, 28, 0.35);
         }
 
         .btn-submit:disabled {
@@ -350,49 +399,54 @@ if (isEinvLoggedIn()) {
             transform: none !important;
         }
 
-        /* Developer & Copyright Footer */
+        /* ── Footer Credits ── */
         .login-credits {
             text-align: center;
-            margin-top: 1.75rem;
+            margin-top: 1.85rem;
         }
 
         .credit-copy {
-            font-size: 0.84rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            color: var(--text-muted);
+            color: var(--text-footer-main);
             letter-spacing: 0.01em;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.3rem;
+            transition: color 0.25s ease;
         }
 
         .credit-dev {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
+            transition: color 0.25s ease;
         }
 
         .credit-dev strong {
-            color: var(--text-label);
+            color: var(--text-footer-bold);
             font-weight: 700;
+            transition: color 0.25s ease;
         }
     </style>
 </head>
 <body>
 
-    <!-- Ambient Glow Effects -->
-    <div class="ambient-glow ambient-glow-1"></div>
-    <div class="ambient-glow ambient-glow-2"></div>
-    <div class="grid-overlay"></div>
+    <!-- Top-Right Theme Toggle Button (Light / Dark) -->
+    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch to Dark Mode" aria-label="Toggle Theme">
+        <i class="fa-regular fa-moon" id="themeToggleIcon"></i>
+    </button>
 
     <div class="login-wrapper">
         <div class="login-card">
+            
             <!-- Brand Header -->
             <div class="brand-header">
-                <div class="logo-img-wrapper">
-                    <img src="<?= BASE_URL ?>assets/img/logo-horizontal.png" alt="E-Invoice Portal" class="logo-img">
+                <div class="logo-img-box">
+                    <img src="<?= BASE_URL ?>assets/img/logo-horizontal.png?v=<?= file_exists(__DIR__ . '/assets/img/logo-horizontal.png') ? filemtime(__DIR__ . '/assets/img/logo-horizontal.png') : '2.0' ?>" alt="ELLA MOTOR PARTS" class="logo-img">
                 </div>
                 
-                <div class="d-flex justify-content-center mb-2">
+                <div class="d-flex justify-content-center">
                     <div class="portal-badge">
-                        <i class="fa-solid fa-file-invoice-dollar"></i> Electronic Invoicing Portal
+                        <i class="fa-solid fa-file-invoice"></i>
+                        <span>Electronic Invoicing Portal</span>
                     </div>
                 </div>
 
@@ -401,10 +455,10 @@ if (isEinvLoggedIn()) {
 
             <!-- Login Form -->
             <form id="loginForm" onsubmit="handleLogin(event)" autocomplete="off">
+                
+                <!-- Username -->
                 <div class="form-group">
-                    <label class="form-label-custom" for="username">
-                        <span>Username</span>
-                    </label>
+                    <label class="form-label" for="username">Username</label>
                     <div class="input-box">
                         <i class="fa-solid fa-user input-icon"></i>
                         <input type="text" 
@@ -417,25 +471,24 @@ if (isEinvLoggedIn()) {
                     </div>
                 </div>
 
+                <!-- Password -->
                 <div class="form-group">
-                    <label class="form-label-custom" for="password">
-                        <span>Password</span>
-                    </label>
+                    <label class="form-label" for="password">Password</label>
                     <div class="input-box">
                         <i class="fa-solid fa-lock input-icon"></i>
                         <input type="password" 
-                               class="form-control-custom" 
+                               class="form-control-custom has-toggle" 
                                id="password" 
                                placeholder="••••••••" 
                                required 
-                               autocomplete="current-password"
-                               style="padding-right: 2.85rem;">
+                               autocomplete="current-password">
                         <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="Show/Hide Password" tabindex="-1">
                             <i class="fa-solid fa-eye" id="eyeIcon"></i>
                         </button>
                     </div>
                 </div>
 
+                <!-- Submit Button -->
                 <button type="submit" class="btn-submit" id="btnLogin">
                     <i class="fa-solid fa-arrow-right-to-bracket"></i>
                     <span>Sign In to Portal</span>
@@ -445,7 +498,7 @@ if (isEinvLoggedIn()) {
 
         <!-- Developer & Business Credits -->
         <div class="login-credits">
-            <div class="credit-copy">&copy; <?= date('Y') ?> E-Invoice Management Portal</div>
+            <div class="credit-copy">&copy; 2026 Ella Motor Parts</div>
             <div class="credit-dev">
                 Developed by: <strong>Lester Bucag</strong>
             </div>
@@ -457,6 +510,39 @@ if (isEinvLoggedIn()) {
     <script>
     window.BASE_URL = <?= json_encode(BASE_URL) ?>;
 
+    // Theme Management (Light / Dark)
+    function initTheme() {
+        const savedTheme = localStorage.getItem('einv_login_theme') || 'light';
+        applyTheme(savedTheme);
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('einv_login_theme', theme);
+        
+        const btn = document.getElementById('themeToggleBtn');
+        const icon = document.getElementById('themeToggleIcon');
+        if (icon && btn) {
+            if (theme === 'dark') {
+                icon.className = 'fa-regular fa-sun';
+                btn.setAttribute('title', 'Switch to Light Mode');
+            } else {
+                icon.className = 'fa-regular fa-moon';
+                btn.setAttribute('title', 'Switch to Dark Mode');
+            }
+        }
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        applyTheme(newTheme);
+    }
+
+    // Initialize Theme immediately
+    initTheme();
+
+    // Password Visibility Toggle
     function togglePasswordVisibility() {
         const passInput = document.getElementById('password');
         const eyeIcon = document.getElementById('eyeIcon');
@@ -472,18 +558,22 @@ if (isEinvLoggedIn()) {
         }
     }
 
+    // Form Submission & Authentication
     function handleLogin(e) {
         e.preventDefault();
         const btn = document.getElementById('btnLogin');
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value.trim();
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
         if (!u || !p) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Missing Fields',
                 text: 'Please enter both username and password.',
-                confirmButtonColor: '#ee4d2d'
+                background: isDark ? '#131622' : '#ffffff',
+                color: isDark ? '#ffffff' : '#0f172a',
+                confirmButtonColor: '#e11d2a'
             });
             return;
         }
@@ -509,8 +599,10 @@ if (isEinvLoggedIn()) {
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
-                    timer: 900,
-                    timerProgressBar: true
+                    timer: 850,
+                    timerProgressBar: true,
+                    background: isDark ? '#131622' : '#ffffff',
+                    color: isDark ? '#ffffff' : '#0f172a'
                 });
                 
                 Toast.fire({
@@ -527,7 +619,9 @@ if (isEinvLoggedIn()) {
                     icon: 'error',
                     title: 'Sign In Failed',
                     text: data.error || 'Invalid username or password.',
-                    confirmButtonColor: '#ee4d2d'
+                    background: isDark ? '#131622' : '#ffffff',
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    confirmButtonColor: '#e11d2a'
                 });
             }
         })
@@ -538,7 +632,9 @@ if (isEinvLoggedIn()) {
                 icon: 'error',
                 title: 'Connection Error',
                 text: err.message,
-                confirmButtonColor: '#ee4d2d'
+                background: isDark ? '#131622' : '#ffffff',
+                color: isDark ? '#ffffff' : '#0f172a',
+                confirmButtonColor: '#e11d2a'
             });
         });
     }

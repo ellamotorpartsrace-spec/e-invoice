@@ -189,10 +189,10 @@ class ShopeeInvoicePDF extends FPDF {
             $this->SetXY($pageLeft, 18);
             $this->SetFont('Helvetica', 'B', 15);
             $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
-            $this->Cell(48, 6, 'INVOICE PRO', 0, 1, 'L');
+            $this->Cell(48, 6, 'ELLA MOTOR PARTS', 0, 1, 'L');
             $this->SetFont('Helvetica', '', 7.5);
             $this->SetTextColor($textMuted[0], $textMuted[1], $textMuted[2]);
-            $this->Cell(48, 4, 'ELECTRONIC INVOICE PORTAL', 0, 1, 'L');
+            $this->Cell(48, 4, 'RACE-SPEC PERFORMANCE', 0, 1, 'L');
         }
 
         // Seller Registered Business Details (Middle: X = 66 to 123)
@@ -200,31 +200,31 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetXY($sellerInfoX, 17);
         $this->SetFont('Helvetica', 'B', 8.5);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $storeName = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'DEMO E-COMMERCE ENTERPRISES';
+        $storeName = !empty($this->storeInfo['store_name']) ? strtoupper($this->storeInfo['store_name']) : 'ELLA MOTOR PARTS';
         $this->Cell(58, 3.8, $this->t(substr($storeName, 0, 38)), 0, 1, 'L');
 
         // Store Tagline in Platform Accent Color
         $this->SetX($sellerInfoX);
         $this->SetFont('Helvetica', 'B', 7.5);
         $this->SetTextColor($t['primary'][0], $t['primary'][1], $t['primary'][2]);
-        $storeTagline = !empty($this->storeInfo['store_tagline']) ? strtoupper($this->storeInfo['store_tagline']) : 'OFFICIAL ONLINE FLAGSHIP STORE';
+        $storeTagline = !empty($this->storeInfo['store_tagline']) ? strtoupper($this->storeInfo['store_tagline']) : 'MOTORCYCLE PARTS, ACCESSORIES & RACE-SPEC';
         $this->Cell(58, 3.4, $this->t(substr($storeTagline, 0, 42)), 0, 1, 'L');
 
         // Store TIN & VAT Status (Readable, clear typography)
         $this->SetX($sellerInfoX);
         $this->SetFont('Helvetica', '', 7.5);
         $this->SetTextColor($textLabel[0], $textLabel[1], $textLabel[2]);
-        $storeTin = !empty($this->storeInfo['store_tin']) ? $this->storeInfo['store_tin'] : (!empty($this->storeInfo['store_tax_id']) ? $this->storeInfo['store_tax_id'] : '123-456-789-00000');
+        $storeTin = !empty($this->storeInfo['store_tin']) ? $this->storeInfo['store_tin'] : (!empty($this->storeInfo['store_tax_id']) ? $this->storeInfo['store_tax_id'] : '408-025-947-00000');
         $vatStatus = !empty($this->storeInfo['vat_status']) ? $this->storeInfo['vat_status'] : 'VAT Registered';
         $this->Cell(58, 3.2, $this->t('VAT REG TIN: ' . $storeTin . ' (' . $vatStatus . ')'), 0, 1, 'L');
 
         // Store Registered Address (dynamic 2-line split, zero truncation)
-        $fullStoreAddr = !empty($this->storeInfo['store_address']) ? $this->storeInfo['store_address'] : '123 Commercial Ave., Ortigas Center, Pasig City, Metro Manila 1605';
+        $fullStoreAddr = !empty($this->storeInfo['store_address']) ? $this->storeInfo['store_address'] : '#70 Don Jose Canciller Ave., Cauayan City, Isabela 3305';
         $addrParts = array_map('trim', explode(',', $fullStoreAddr));
         $lineA = $addrParts[0] ?? $fullStoreAddr;
         $lineB = implode(', ', array_slice($addrParts, 1));
         if (empty($lineB)) {
-            $lineB = 'Metro Manila, Philippines';
+            $lineB = 'Cauayan City, Isabela 3305';
         }
 
         $this->SetX($sellerInfoX);
@@ -234,7 +234,7 @@ class ShopeeInvoicePDF extends FPDF {
         $this->Cell(58, 3.2, $this->t($lineB), 0, 1, 'L');
 
         $this->SetX($sellerInfoX);
-        $storeContact = $this->storeInfo['store_contact'] ?? '(02) 8123-4567 / 0917-000-0000';
+        $storeContact = $this->storeInfo['store_contact'] ?? '0917-874-7440';
         $this->Cell(58, 3.2, $this->t('Hotline: ' . $storeContact), 0, 1, 'L');
 
         // ── Right Side: Official Sales Invoice Title & Themed Serial ──
@@ -733,26 +733,35 @@ class ShopeeInvoicePDF extends FPDF {
         $this->SetLineWidth(0.35);
         $this->Line($pageLeft, $footerY, $pageLeft + $pageWidth, $footerY);
 
-        $permitNo = $this->storeInfo['permit_no'] ?? 'POS-CAS-2026-001';
-        $atpNo = $this->storeInfo['atp_no'] ?? '3AU000000000000';
-        $approvedSeries = $this->storeInfo['approved_series'] ?? 'SI-SHP-2026-00001 - SI-SHP-2026-99999';
+        $permitNo = $this->storeInfo['permit_no'] ?? 'CAS-POS-2026-00001';
+        $atpNo = $this->storeInfo['atp_no'] ?? 'SAL000000000001';
+        
+        // Channel-specific approved series matching invoice prefix
+        $channelKey = $t['platform_key'] ?? 'shopee';
+        if ($channelKey === 'lazada') {
+            $approvedSeries = 'EI-LAZ-2026-00001 - EI-LAZ-2026-99999';
+        } elseif ($channelKey === 'tiktok') {
+            $approvedSeries = 'EI-TIK-2026-00001 - EI-TIK-2026-99999';
+        } else {
+            $approvedSeries = 'EI-SHO-2026-00001 - EI-SHO-2026-99999';
+        }
 
         // 2-Column Statutory Information
         $this->SetXY($pageLeft, $footerY + 1.8);
-        $this->SetFont('Helvetica', '', 7.0);
+        $this->SetFont('Helvetica', '', 6.6);
         $this->SetTextColor($textLabel[0], $textLabel[1], $textLabel[2]);
-        $this->Cell(95, 3.4, $this->t('PERMIT TO USE / CAS ACN: ' . $permitNo), 0, 0, 'L');
-        $this->Cell($pageWidth - 95, 3.4, $this->t('BIR AUTHORITY TO PRINT NO: ' . $atpNo), 0, 1, 'R');
+        $this->Cell(95, 3.2, $this->t('PERMIT TO USE / CAS / CAS-ACN: ' . $permitNo), 0, 0, 'L');
+        $this->Cell($pageWidth - 95, 3.2, $this->t('BIR AUTHORITY TO PRINT NO.: ' . $atpNo), 0, 1, 'R');
 
         $this->SetX($pageLeft);
-        $this->Cell(95, 3.4, 'SYSTEM: BIR E-COMMERCE E-INVOICE ENTERPRISE ERP', 0, 0, 'L');
-        $this->Cell($pageWidth - 95, 3.4, $this->t('APPROVED SERIES: ' . $approvedSeries), 0, 1, 'R');
+        $this->Cell(95, 3.2, 'SYSTEM: ELLA MOTORPARTS E-INVOICE SYSTEM (BIR RR 7-2024)', 0, 0, 'L');
+        $this->Cell($pageWidth - 95, 3.2, $this->t('APPROVED SERIES: ' . $approvedSeries), 0, 1, 'R');
 
         // Centered 5-Year Validity Statement
-        $this->SetXY($pageLeft, $footerY + 9.2);
-        $this->SetFont('Helvetica', 'B', 7.5);
+        $this->SetXY($pageLeft, $footerY + 8.8);
+        $this->SetFont('Helvetica', 'B', 7.2);
         $this->SetTextColor($navyDark[0], $navyDark[1], $navyDark[2]);
-        $this->Cell($pageWidth, 3.6, $this->t('"THIS SALES INVOICE SHALL BE VALID FOR FIVE (5) YEARS FROM THE DATE OF ISSUANCE"'), 0, 1, 'C');
+        $this->Cell($pageWidth, 3.5, $this->t('"THIS SALES INVOICE SHALL BE VALID FOR FIVE (5) YEARS FROM THE DATE OF ISSUANCE"'), 0, 1, 'C');
 
         // ── Official Authorized Representative E-Signature & JWS Digital Seal ──
         $sigCardY = $footerY + 13.0;

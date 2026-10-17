@@ -1,6 +1,6 @@
 <?php
 // history.php — Modern Multi-Platform Invoices History & BIR Tax Reports with Server-Side Pagination
-$pageTitle = 'Invoices History & Tax Reports';
+$pageTitle = 'Invoices Archive & Tax Reports';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -119,7 +119,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
-            <h2 class="fw-bold mb-0" style="letter-spacing: -0.02em;">Invoices History & Tax Reports</h2>
+            <h2 class="fw-bold mb-0" style="letter-spacing: -0.02em;">Invoices Archive & Tax Reports</h2>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:0.75rem;">
                 BIR 2550Q Audit Ready
             </span>
@@ -187,20 +187,18 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 <!-- Search & Filter Card -->
-<div class="app-card mb-4" style="border:1px solid #e2e8f0; overflow:hidden;">
+<!-- Search & Filter Card -->
+<div class="app-card mb-4 filter-toolbar-card" style="overflow:hidden;">
     <input type="hidden" id="fPlatform" value="all">
-    <div class="d-flex align-items-stretch" style="min-height:52px;">
+    <div class="d-flex align-items-stretch flex-wrap flex-lg-nowrap" style="min-height:52px;">
 
         <!-- Search Bar — grows to fill available space -->
-        <div class="d-flex align-items-center gap-2 px-4 flex-grow-1" id="searchWrapper"
-            style="border-right:1px solid #e2e8f0; background:#fafbfc; transition:background 0.15s, border-color 0.15s;">
+        <div class="d-flex align-items-center gap-2 px-4 flex-grow-1 filter-search-wrap" id="searchWrapper">
             <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8; font-size:0.88rem; flex-shrink:0;"></i>
-            <input type="text" class="form-control border-0 p-0 fw-medium" id="fSearch"
+            <input type="text" class="form-control border-0 p-0 fw-medium filter-search-input" id="fSearch"
                 placeholder="Search invoice number, order SN, or buyer name..."
                 onkeyup="if(event.key==='Enter') applyFilters()"
-                onfocus="this.closest('#searchWrapper').style.background='#fff'; this.closest('#searchWrapper').style.borderRightColor='#2563eb';"
-                onblur="this.closest('#searchWrapper').style.background='#fafbfc'; this.closest('#searchWrapper').style.borderRightColor='#e2e8f0';"
-                style="box-shadow:none; font-size:0.875rem; background:transparent; color:#0f172a; width:100%;">
+                style="box-shadow:none; font-size:0.875rem; background:transparent; width:100%;">
             <button class="btn p-0 border-0 d-none" type="button" id="btnClearSearch" onclick="clearSearchFilter()"
                 style="line-height:1; flex-shrink:0; color:#94a3b8;">
                 <i class="fa-solid fa-circle-xmark" style="font-size:0.9rem;"></i>
@@ -208,8 +206,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <!-- Platform Pills — fixed, centered -->
-        <div class="d-flex align-items-center gap-1 px-3 flex-shrink-0" id="platformPillFilter"
-            style="border-right:1px solid #e2e8f0; background:#fff;">
+        <div class="d-flex align-items-center gap-1 px-3 flex-shrink-0 filter-platform-wrap" id="platformPillFilter">
             <button type="button" class="filter-plat-btn btn btn-sm rounded-pill px-3 py-1 fw-semibold active"
                 data-platform="all" onclick="selectFilterPlatform('all')"
                 style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; letter-spacing:-0.01em;">
@@ -217,23 +214,23 @@ require_once __DIR__ . '/includes/header.php';
             </button>
             <button type="button" class="filter-plat-btn btn btn-sm rounded-pill px-3 py-1 fw-semibold"
                 data-platform="Shopee" onclick="selectFilterPlatform('Shopee')"
-                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; color:#64748b; letter-spacing:-0.01em;">
+                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; letter-spacing:-0.01em;">
                 <i class="fa-solid fa-bag-shopping me-1" style="color:#ee4d2d; font-size:0.75rem;"></i>Shopee
             </button>
             <button type="button" class="filter-plat-btn btn btn-sm rounded-pill px-3 py-1 fw-semibold"
                 data-platform="Lazada" onclick="selectFilterPlatform('Lazada')"
-                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; color:#64748b; letter-spacing:-0.01em;">
+                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; letter-spacing:-0.01em;">
                 <i class="fa-solid fa-heart me-1" style="color:#1050d8; font-size:0.75rem;"></i>Lazada
             </button>
             <button type="button" class="filter-plat-btn btn btn-sm rounded-pill px-3 py-1 fw-semibold"
                 data-platform="TikTok Shop" onclick="selectFilterPlatform('TikTok Shop')"
-                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; color:#64748b; letter-spacing:-0.01em;">
-                <i class="fa-brands fa-tiktok me-1" style="color:#18181b; font-size:0.75rem;"></i>TikTok
+                style="font-size:0.8rem; white-space:nowrap; transition:all 0.2s; letter-spacing:-0.01em;">
+                <i class="fa-brands fa-tiktok me-1" style="font-size:0.75rem;"></i>TikTok
             </button>
         </div>
 
         <!-- Date Range Picker — fixed width right -->
-        <div class="d-flex align-items-center gap-2 px-4 flex-shrink-0" style="background:#fff; min-width:260px;">
+        <div class="d-flex align-items-center gap-2 px-4 flex-shrink-0 filter-date-wrap" style="min-width:260px;">
             <i class="fa-regular fa-calendar-days" style="color:#94a3b8; font-size:0.88rem; flex-shrink:0;"></i>
             <div class="position-relative flex-grow-1">
                 <input type="text" class="form-control border-0 p-0 fw-semibold font-mono" id="fDateRange"
