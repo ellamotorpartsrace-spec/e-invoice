@@ -56,6 +56,12 @@ try {
         }
     }
 
+    $eisStatus = trim($_GET['eis_status'] ?? '');
+    if (!empty($eisStatus) && strtolower($eisStatus) !== 'all') {
+        $where[] = "eis_status = ?";
+        $params[] = $eisStatus;
+    }
+
     $whereSql = implode(' AND ', $where);
 
     // 1. KPI & Total Counts across whole filtered set
@@ -89,7 +95,9 @@ try {
         SELECT 
             id, invoice_number, order_sn, platform_name, buyer_name, buyer_tin, invoice_type, 
             order_date, issue_date, gross_items_total, discount_amount, shipping_fee,
-            total_amount, vatable_sales, vat_amount, pdf_filename, status, created_at
+            total_amount, vatable_sales, vat_amount, pdf_filename, status,
+            eis_status, eis_submit_id, eis_ack_id, eis_unique_id, eis_result_code, eis_error_desc, eis_transmitted_at,
+            created_at
         FROM einv_invoices 
         WHERE $whereSql
         ORDER BY id DESC

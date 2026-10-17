@@ -1,181 +1,136 @@
-# BIR EIS (Electronic Invoicing System) Certification & Registration Guide
+# BIR EIS (Electronic Invoicing System) Certification & Integration Guide
 **System:** Multi-Platform E-Commerce E-Invoice Portal (Shopee, Lazada, TikTok Shop)  
-**Developer:** Lester Bucag  
-**Taxpayer Profile:** Demo E-Commerce Enterprises — Metro Manila (Sample RDO)  
+**Specification:** BIR EIS e-Invoice API Development Guide for PILOT (Ver. 2.3) & CAS JSON Format v2.2  
 **Target Gateways:**
 - **Sandbox (Testing):** `https://eis-cert.bir.gov.ph`
 - **Production (Live):** `https://eis.bir.gov.ph`
 
 ---
 
-## 1. Executive Summary: Does the BIR Test Your System?
+## 1. Executive Summary: How BIR EIS Certification Works
 
-### Quick Answer: **YES, but NOT your PHP source code.**
-Many taxpayers believe the BIR will send an IT auditor to physically inspect their code or open up their local servers. **This is not how BIR EIS certification works.**
+Under **Revenue Regulations (RR) No. 8-2022**, **RR No. 9-2022**, and the **Ease of Paying Taxes (EOPT) Act (RA 11976)**:
+1. The BIR evaluates your system by testing **live API payload transmissions** against the BIR EIS Sandbox (`https://eis-cert.bir.gov.ph`).
+2. Transmitted data must strictly comply with the **54-field Computerized Accounting System (CAS) JSON Schema** (`classes/BirEisClient.php`).
+3. Transmission is secured by a **3-tier cryptographic protocol**:
+   - **Transport**: HMAC-SHA256 authenticated HTTP headers.
+   - **Handshake**: Hybrid RSA-2048 encryption for dynamic 6-hour AES-256 session key exchange.
+   - **Document Integrity**: JWS (`RS256`) digital signature per invoice, followed by AES-256-CBC payload encryption.
 
-Under **Revenue Regulations (RR) No. 8-2022** and **RR No. 9-2022**:
-1. The BIR does **not** look at your local PHP files, database code, or server scripts.
-2. The BIR tests your **API Data Payload Transmission** via their cloud sandbox (`https://eis-cert.bir.gov.ph`).
-3. Your system is evaluated on whether the JSON payloads you transmit strictly match the **UN/CEFACT Commercial Invoice Standard (Document Type 380)** and pass mathematical VAT integrity checks (12% VAT separation, gross amounts, voucher deductions, and SHA-256 digital digests).
-
-> **Enterprise System Status:**  
-> Your E-Invoice portal is **already engineered with the complete BIR EIS JSON Schema Engine** (`classes/BirEisClient.php`) and includes a built-in **Sandbox Self-Test Runner** right inside your **Settings** page.
-
----
-
-## 2. Understanding Your BIR Tax Identifiers (What are CAS, ATP, and EIS?)
-
-| Term | Full Meaning | Purpose in E-Invoice Portal | Is it required right now? |
-| :--- | :--- | :--- | :--- |
-| **TIN** | Taxpayer Identification Number | Official BIR 9-digit to 12-digit tax identification (e.g. `123-456-789-00000`). | **Mandatory immediately** (Printed on all invoices). |
-| **ATP** | Authority to Print | Official BIR permit to print bound manual paper sales invoices/receipts through an accredited printer. | Required if you keep manual backup paper booklets. |
-| **CAS ACN** | Computerized Accounting System Acknowledgement Certificate No. | A certificate number issued by the BIR when a business registers an automated computerized POS or accounting system. | Only required once your CAS application is formally filed with your local RDO. |
-| **EIS PTT** | Electronic Invoicing System Permit to Transmit | The authorization granted by the BIR to transmit electronic invoice data to the BIR EIS API Gateway. | Granted **after** completing the Sandbox testing steps below. |
+> **System Status:**  
+> Your E-Invoice portal is now **fully equipped with native PHP OpenSSL engines** implementing the exact BIR Pilot v2.3 and CAS JSON v2.2 specifications without requiring third-party cloud intermediaries.
 
 ---
 
-## 3. Step-by-Step BIR EIS Accreditation Roadmap
+## 2. Understanding BIR Identifiers & Credentials
 
-Here is the exact step-by-step procedure to enroll your enterprise in the BIR EIS:
+| Setting / Credential | BIR Meaning & Source | Purpose in Portal |
+| :--- | :--- | :--- |
+| **Accreditation ID** | 8-digit EIS Certificate Number (starts with `20` for CAS, e.g. `20146IT4`). | Identifies system type and builds `EisUniqueId` and `submitId`. |
+| **EIS User ID & Password** | Registered login account on `https://eis-cert.bir.gov.ph`. | Encrypted with BIR RSA Public Key during `/api/authentication`. |
+| **Application ID** | Registered application identifier on the EIS portal. | Sent in HTTP request header `ApplicationId`. |
+| **Application Secret Key** | Shared secret generated in application settings on EIS portal. | Used as key for HMAC-SHA256 signature during authentication. |
+| **Digital Signing Key ID (`kid`)** | Key-pair ID generated under application settings. | Embedded in JWS header (`{"alg":"RS256","kid":"..."}`). |
+| **Digital Signing Private Key** | Taxpayer's RSA 2048-bit Private Key PEM. | Digitally signs each invoice payload with RSASSA-PKCS1-v1.5 SHA-256. |
 
+---
+
+## 3. The 4-Stage API Call Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Taxpayer as Your E-Invoice Portal
+    participant EIS as BIR EIS Gateway (Sandbox/Prod)
+
+    rect rgb(240, 248, 255)
+    Note over Taxpayer,EIS: Stage 1: 6-Hour Session Key Handshake
+    Taxpayer->>EIS: POST /api/authentication (RSA Encrypted AuthKey + HMAC Header)
+    EIS-->>Taxpayer: HTTP 200 (AES-256 Encrypted SessionKey & AuthToken)
+    end
+
+    rect rgb(255, 248, 240)
+    Note over Taxpayer,EIS: Stage 2: Batch Invoice Transmission (1-100 Invoices)
+    Taxpayer->>EIS: POST /api/invoices (AES Encrypted JWS Tokens + SubmitId)
+    EIS-->>Taxpayer: HTTP 200 Acknowledgment (AckId & RefSubmitId)
+    end
+
+    rect rgb(240, 255, 240)
+    Note over Taxpayer,EIS: Stage 3: Verification Status Polling
+    Taxpayer->>EIS: GET /api/invoice_result/{submitId}
+    EIS-->>Taxpayer: HTTP 200 (processStatusCode: 01=Complete, 02=Processing, SUC001 or ERR codes)
+    end
 ```
-┌────────────────────────────────────────────────────────┐
-│ 1. Enroll Taxpayer Account on BIR EIS Developer Portal │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│ 2. Receive Sandbox Client ID, Client Secret & API Key  │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│ 3. Enter Credentials in E-Invoice Portal Settings      │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│ 4. Run Automated 4-Point Sandbox Self-Test (Settings)   │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│ 5. Submit Transmission Log & Request CTC               │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-┌──────────────────────────▼─────────────────────────────┐
-│ 6. Go Live on Production Gateway (eis.bir.gov.ph)      │
-└────────────────────────────────────────────────────────┘
-```
+
+### Stage 1: Authentication (`POST /api/authentication`)
+- Negotiates a 32-character temporary AES key (`authKey`) with the BIR Sandbox.
+- The returned `authToken` and `sessionKey` are cached in `einv_settings` for **6 hours**.
+
+### Stage 2: Batch Invoice Transmission (`POST /api/invoices`)
+- Can transmit **1 to 100 invoices** in a single batch.
+- Each invoice is converted into the 54-attribute CAS JSON, signed with JWS (`RS256`), concatenated with commas, and encrypted with `sessionKey` via AES-256-CBC.
+- Generates a 33-character `submitId`: `<AccreditationId>-<YYYYMMDD>-<12_random_hex>`.
+- Returns immediate receipt code (`ackId`).
+
+### Stage 3: Result Inquiry (`GET /api/invoice_result/{submitId}`)
+- Polls processing status:
+  - `02`: Still in processing.
+  - `01`: Processing completed. Returns `processedDocuments` with `SUC001` (Success) or specific BIR error codes.
+  - `03`: Processing not available / decryption error.
 
 ---
 
-### Step 1: BIR Registration for EIS Enrollment
-1. Your accountant or authorized representative submits an **Application for System Registration / EIS Certification** to your designated RDO or directly via the BIR EIS online registration portal:
-   - **Portal URL:** `https://eis-cert.bir.gov.ph`
-2. Information required:
-   - Taxpayer Name: **DEMO E-COMMERCE ENTERPRISES** (or your business name)
-   - Registered Business Address: **123 Commercial Ave., Ortigas Center, Pasig City, Metro Manila 1605**
-   - Registered TIN: **123-456-789-00000**
-   - System Name: **Commercial Multi-Platform E-Invoice Portal v2.0**
-   - Software Architecture: **Web-based Standalone Electronic Invoicing (PHP 8.2 / MySQL / REST API)**
+## 4. Key Updates in Version 2.3 (July 2026 EOPT Compliance)
+
+1. **Document Types (`DocType`)**:
+   - `01`: **Invoice** (Standard for all goods and services under the EOPT Act).
+   - `02`: Debit Memo (DM/DN).
+   - `03`: Credit Memo (CM/CN).
+   - *Codes `04` (Special Billing) and `05` (Official Receipt) are permanently **deleted**.*
+2. **Transaction Classification (`TransClass`)**:
+   - `01`: VATable (12%)
+   - `02`: Zero-Rated (0%)
+   - `03`: VAT Exempt
+   - `04`: Local Sales of Registered Business Enterprises (RBEs)
+3. **Seller Types (`SellerInfo.Type`)**:
+   - `0`: VAT Registered
+   - `1`: Non-VAT Registered
+   - `2`: Registered Business Enterprise (RBE)
+4. **New Error Codes**:
+   - `ERR011`: Invalid Document Type (e.g. attempting to send 04 or 05).
+   - `ERR012`: Invalid Seller Type.
+   - `ERR013`: Local Sales of RBEs error (seller is not an RBE).
+   - `ERR014`: Transaction classification error.
+   - `ERR015`: Seller TIN is not registered as an RBE.
+5. **Sandbox Throttle Rule (`E19`)**:
+   - Maximum **1 API request per 10 seconds** in Sandbox mode. Calling faster triggers error `E19: Too frequent sandbox requests`.
 
 ---
 
-### Step 2: Obtain Sandbox Developer Credentials
-Once your enrollment is approved for sandbox testing, the BIR EIS technical team will issue:
-1. **Client ID** (OAuth2 Application ID, e.g., `8f7b2c1a-5d4e-4f3b-9a8c-1e2d3c4b5a6f`)
-2. **Client Secret** (Confidential API key)
-3. **Subscription Key / API Key** (`Ocp-Apim-Subscription-Key`)
-4. **Digital Certificate Serial Number** (Used for cryptographic validation)
+## 5. Using the Invoicing Portal for BIR Certification
 
----
-
-### Step 3: Configure Credentials in E-Invoice Portal Settings
-1. Open your E-Invoice Portal and navigate to **Settings** (`http://localhost/e-invoice/settings.php` or your Hostinger cloud domain).
-2. Scroll to the section: **BIR EIS Gateway & Sandbox Certification**.
-3. Fill in:
-   - **Gateway Environment:** Select `Sandbox (Testing: eis-cert.bir.gov.ph)`
-   - **BIR EIS Client ID:** Paste your issued Client ID
-   - **BIR EIS Client Secret:** Paste your Client Secret
-   - **API Subscription Key:** Paste your API Key
-   - **Digital Certificate Serial No:** Paste your serial number
+### Step 1: Configure Credentials in Settings
+1. Open the portal and navigate to **Settings** (`settings.php`).
+2. Under **BIR Tax Profile**, ensure your registered Business Name, TIN, Branch Code, and Seller Type are correct.
+3. Under **BIR EIS Gateway Configuration**:
+   - Set Gateway Status to **Enabled**.
+   - Select **Sandbox** (`https://eis-cert.bir.gov.ph`).
+   - Enter your **EIS Cert No. (Accreditation ID)**, **User ID**, and **Password**.
+   - Enter your **Application ID** and **Application Secret Key**.
+   - Enter your **Key-Pair ID (`kid`)** and paste your **RSA Private Key PEM**.
 4. Click **Save Tax & EIS Settings**.
 
----
+### Step 2: Run the Built-in Self-Test Suite
+1. Click **Run BIR EIS Sandbox Self-Test** on the Settings page.
+2. The system executes all 4 automated diagnostic scenarios:
+   - **EIS-TC-01**: CAS Schema 54-field structure & 12% VAT math validation.
+   - **EIS-TC-02**: JWS (`RS256`) digital signature generation test.
+   - **EIS-TC-03**: RSA & AES-256-CBC cipher round-trip test.
+   - **EIS-TC-04**: Live gateway handshake with `https://eis-cert.bir.gov.ph/api/authentication`.
+3. You can click **Copy BIR JSON Payload** to inspect the generated CAS JSON.
 
-### Step 4: Run the Automated Sandbox Self-Test
-1. In `settings.php`, click the button: **Run BIR EIS Sandbox Self-Test**.
-2. The system executes the **4 Mandatory BIR EIS Compliance Scenarios**:
-
-| Scenario ID | Test Case Title | What BIR Validates | System Status |
-| :--- | :--- | :--- | :--- |
-| **EIS-TC-01** | OAuth2 Authentication & Handshake | Verifies TLS 1.3 encryption and authorized API bearer token exchange. | `PASSED` / `VERIFIED_SCHEMA` |
-| **EIS-TC-02** | 12% VAT Sales Invoice Schema | Validates strict separation: $\text{VATable Sales} + 12\% \text{ VAT} = \text{Total Sales}$. | `PASSED` |
-| **EIS-TC-03** | Promotional Voucher / Deductions | Verifies net taxable calculation when Shopee/Lazada/TikTok discount vouchers are applied. | `PASSED` |
-| **EIS-TC-04** | SHA-256 Document Integrity Digest | Computes a tamper-proof cryptographic digital hash of the invoice content. | `PASSED` |
-
-3. Click **Copy BIR JSON Payload** if the BIR certification officer asks to inspect a sample generated JSON file.
-
----
-
-### Step 5: Submission & Certificate of Technical Compliance (CTC)
-1. Upon completing the test scenarios, capture the on-screen test confirmation or export the JSON schema.
-2. Submit your test results to the BIR EIS Technical Audit Group.
-3. The BIR issues the **Certificate of Technical Compliance (CTC)** and assigns your official **Permit to Transmit (PTT)**.
-
----
-
-### Step 6: Go Live on Production
-1. Open **Settings** in the portal.
-2. Change **Gateway Environment** from `Sandbox` to `Production (Live: eis.bir.gov.ph)`.
-3. Change **EIS Gateway Status** to `Enabled (Direct API Transmission)`.
-4. Click **Save Tax & EIS Settings**.
-5. Every generated sales invoice batch will now automatically synchronize to the BIR EIS cloud database in real-time or near-real-time!
-
----
-
-## 4. Multi-Marketplace Compliance Architecture
-
-Whether your sales originate from **Shopee**, **Lazada**, or **TikTok Shop**, the portal standardizes the order data into the official BIR format:
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  Multi-Marketplace Order Exports                         │
-│  - Shopee: Order.all.xxxx.xlsx                           │
-│  - Lazada: orders_export_xxxx.xlsx                       │
-│  - TikTok Shop: Order_List_xxxx.xlsx                     │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-┌────────────────────────────▼─────────────────────────────┐
-│  ShopeeExcelReader & Universal Field Aliases             │
-│  - Order SN, Buyer Name, Buyer Address                   │
-│  - Itemized SKUs, Quantities, Unit Prices                │
-│  - Platform Escrow Settlement Channel                    │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-              ┌──────────────┴──────────────┐
-              ▼                             ▼
-┌───────────────────────────┐ ┌───────────────────────────┐
-│ BIR Annex A1 1-Page PDF   │ │ BIR EIS UN/CEFACT JSON    │
-│ - 12% VAT Breakdown       │ │ - Document Type 380       │
-│ - Official Branding       │ │ - SHA-256 Digital Digest  │
-│ - Digital QR Signature    │ │ - Direct Gateway API      │
-└───────────────────────────┘ └───────────────────────────┘
-```
-
----
-
-## 5. Frequently Asked Questions (FAQ)
-
-### Q1: Is an E-Commerce Enterprise required to transmit to EIS right now?
-**Answer:** Not immediately, unless classified under the Large Taxpayer Service (LTS) or mandated by a specific Revenue Memorandum Order (RMO). However, under the **Ease of Paying Taxes (EOPT) Act (RA 11976)**, all VAT-registered businesses will gradually transition to electronic transmission. Having your system 100% prepared now puts you years ahead of competitors and guarantees zero disruption when mandated.
-
-### Q2: What happens if our internet goes down?
-**Answer:** The portal works completely offline for PDF invoice generation. Invoices are stored in the local or cloud database (`einv_invoices`) with `eis_status = 'pending'`. When internet access is restored, pending invoices can be batch-transmitted to the BIR without interrupting store operations.
-
-### Q3: How do we show this to our accountant or tax consultant?
-**Answer:** 
-1. Navigate to **Settings** (`settings.php`).
-2. Click **Run BIR EIS Sandbox Self-Test**.
-3. Show them the **4 Green Checkmarks** and click **Copy BIR JSON Payload**.
-4. Give them a copy of this `BIR_EIS_CERTIFICATION_GUIDE.md` file. Any accredited tax consultant or CPA will instantly recognize that your system complies with RR 8-2022 and Document Type 380 standards.
-
----
-*Document prepared by Lester Bucag — E-Invoice Portal Architecture & BIR Compliance System.*
+### Step 3: Transmit Live Test Invoices & Sync Status
+1. Navigate to **Invoices History** (`history.php`).
+2. Select up to 100 invoices using the table checkboxes.
+3. Click **Transmit to BIR EIS**. The portal will digitally sign, encrypt, and submit the batch.
+4. After a few minutes, click **Sync BIR EIS** to poll the gateway for validation results (`SUC001`).

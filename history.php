@@ -260,7 +260,13 @@ require_once __DIR__ . '/includes/header.php';
             <h5 class="mb-0 fw-bold fs-6">Registered Invoices</h5>
             <span class="badge bg-secondary-subtle text-secondary rounded-pill" id="archiveCountBadge">0 records</span>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="transmitSelectedToEis()" id="btnTransmitHeader" style="display:none;">
+                <i class="fa-solid fa-cloud-arrow-up me-1"></i> Transmit (<span id="hdrSelCount">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold" onclick="syncBirEisStatus()" title="Poll status for transmitted invoices from BIR Gateway">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Sync BIR EIS
+            </button>
             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="selectAllOnCurrentPage(true)">Select Page</button>
             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="clearSelection()">Deselect All</button>
         </div>
@@ -280,12 +286,13 @@ require_once __DIR__ . '/includes/header.php';
                     <th width="100" class="text-end">Vatable Sales</th>
                     <th width="90" class="text-end">12% VAT</th>
                     <th width="100" class="text-end">Total Amount</th>
-                    <th width="90" class="text-center">Actions</th>
+                    <th width="115" class="text-center">BIR EIS Status</th>
+                    <th width="115" class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody id="historyTbody">
                 <tr>
-                    <td colspan="10" class="text-center py-5 text-secondary">
+                    <td colspan="11" class="text-center py-5 text-secondary">
                         <i class="fa-solid fa-spinner fa-spin fs-4 text-primary mb-2 d-block"></i> Loading invoice archive...
                     </td>
                 </tr>
@@ -332,9 +339,39 @@ require_once __DIR__ . '/includes/header.php';
         <button type="button" class="btn btn-sm px-3 rounded-pill fw-semibold" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); backdrop-filter:blur(4px);" onclick="clearSelection()">
             <i class="fa-solid fa-xmark me-1"></i> Clear
         </button>
+        <button type="button" class="btn btn-sm px-3 py-2 rounded-pill fw-bold text-white" id="btnTransmitBatch" onclick="transmitSelectedToEis()" style="background:linear-gradient(135deg,#dc2626,#b91c1c); box-shadow:0 4px 12px rgba(220,38,38,0.35); border:none;">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Transmit to BIR EIS
+        </button>
         <button type="button" class="btn btn-sm px-4 py-2 rounded-pill fw-bold" id="btnDownloadSelected" onclick="downloadSelectedZip()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; box-shadow:0 4px 12px rgba(37,99,235,0.35); border:none;">
             <i class="fa-solid fa-file-zipper me-2"></i> Download ZIP
         </button>
+    </div>
+</div>
+
+<!-- Modal for Viewing BIR CAS JSON (Ver. 2.3) -->
+<div class="modal fade" id="casJsonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-file-code text-warning fs-5"></i>
+                    <div>
+                        <h6 class="modal-title fw-bold mb-0" id="casJsonModalTitle">BIR CAS e-Invoice JSON (Ver. 2.3)</h6>
+                        <span class="text-white-50 small" id="casJsonModalSub"></span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <pre class="bg-dark text-light p-3 rounded-3 font-mono small mb-0" id="casJsonCode" style="max-height: 480px; overflow-y: auto; font-size: 0.78rem;"></pre>
+            </div>
+            <div class="modal-footer bg-white border-top py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-pill fw-bold" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-dark btn-sm px-3 rounded-pill fw-bold" onclick="copyCasJsonModal()">
+                    <i class="fa-solid fa-copy me-1"></i> Copy JSON
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -536,7 +573,7 @@ function renderTableRows(invoices) {
     tbody.empty();
 
     if (!invoices.length) {
-        tbody.append('<tr><td colspan="10" class="text-center py-5 text-secondary"><i class="fa-solid fa-folder-open fs-3 text-muted mb-2 d-block"></i>No matching invoices found in archive.</td></tr>');
+        tbody.append('<tr><td colspan="11" class="text-center py-5 text-secondary"><i class="fa-solid fa-folder-open fs-3 text-muted mb-2 d-block"></i>No matching invoices found in archive.</td></tr>');
         return;
     }
 
@@ -553,6 +590,21 @@ function renderTableRows(invoices) {
             platformBadge = '<span class="badge rounded-pill px-2 py-1" style="background:#f1f5f9; color:#0f172a; border:1px solid rgba(15,23,42,0.25); font-weight:600; font-size:0.75rem;"><i class="fa-brands fa-tiktok me-1" style="color:#0f172a;"></i>TikTok</span>';
         } else {
             platformBadge = '<span class="badge rounded-pill px-2 py-1" style="background:#fff1ee; color:#ee4d2d; border:1px solid rgba(238,77,45,0.25); font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-bag-shopping me-1" style="color:#ee4d2d;"></i>Shopee</span>';
+        }
+
+        // BIR EIS Status Badge
+        const eStatus = inv.eis_status || 'pending';
+        let eisBadge = '';
+        if (eStatus === 'verified') {
+            eisBadge = `<span class="badge rounded-pill px-2 py-1" style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:0.72rem;" title="Verified by BIR EIS (${escapeHtml(inv.eis_result_code || 'SUC001')})"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>`;
+        } else if (eStatus === 'transmitted') {
+            eisBadge = `<span class="badge rounded-pill px-2 py-1" style="background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; font-size:0.72rem;" title="Ack: ${escapeHtml(inv.eis_ack_id || 'Queued')}"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Transmitted</span>`;
+        } else if (eStatus === 'failed') {
+            eisBadge = `<span class="badge rounded-pill px-2 py-1" style="background:#fef2f2; color:#b91c1c; border:1px solid #fca5a5; font-size:0.72rem;" title="${escapeHtml(inv.eis_error_desc || 'Rejected')}"><i class="fa-solid fa-triangle-exclamation me-1"></i>${escapeHtml(inv.eis_result_code || 'Failed')}</span>`;
+        } else if (eStatus === 'exempt') {
+            eisBadge = `<span class="badge rounded-pill px-2 py-1 bg-light text-muted border" style="font-size:0.72rem;">Exempt</span>`;
+        } else {
+            eisBadge = `<span class="badge rounded-pill px-2 py-1" style="background:#fefce8; color:#a16207; border:1px solid #fde047; font-size:0.72rem;"><i class="fa-solid fa-clock me-1"></i>Pending</span>`;
         }
 
         tbody.append(`
@@ -575,8 +627,12 @@ function renderTableRows(invoices) {
                 <td class="text-end font-mono">₱${Number(inv.vatable_sales).toFixed(2)}</td>
                 <td class="text-end font-mono fw-semibold" style="color:#b45309;">₱${Number(inv.vat_amount).toFixed(2)}</td>
                 <td class="text-end font-mono fw-bold text-dark">₱${Number(inv.total_amount).toFixed(2)}</td>
+                <td class="text-center">${eisBadge}</td>
                 <td class="text-center">
                     <div class="action-btn-group">
+                        <button type="button" class="action-btn action-btn-view action-btn-icon-only text-danger" title="Preview BIR CAS JSON" onclick="viewCasJson(${inv.id})">
+                            <i class="fa-solid fa-file-code"></i>
+                        </button>
                         <a href="${viewUrl}" target="_blank" class="action-btn action-btn-view" title="Preview / Print PDF">
                             <i class="fa-regular fa-eye"></i><span>View</span>
                         </a>
@@ -711,15 +767,163 @@ function syncHeaderCheckbox() {
 
 function updateBatchFloatingBar() {
     const count = selectedInvoices.size;
+    $('#hdrSelCount').text(count);
     if (count > 0) {
         let total = 0;
         selectedInvoices.forEach(inv => { total += Number(inv.total_amount || 0); });
         $('#batchBarCount').text(`${count} invoice${count > 1 ? 's' : ''} selected`);
         $('#batchBarTotal').text(`Total: ₱${total.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
         $('#historyBatchBar').removeClass('d-none');
+        $('#btnTransmitHeader').show();
     } else {
         $('#historyBatchBar').addClass('d-none');
+        $('#btnTransmitHeader').hide();
     }
+}
+
+let currentCasJsonStr = '';
+
+function viewCasJson(invId) {
+    Swal.fire({
+        title: 'Generating BIR CAS JSON...',
+        text: 'Formatting 54-field CAS schema per BIR EIS Pilot v2.3...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch(window.BASE_URL + 'api/eis_preview_json.php?id=' + invId)
+    .then(r => r.json())
+    .then(data => {
+        Swal.close();
+        if (data.success) {
+            currentCasJsonStr = data.cas_json;
+            $('#casJsonModalSub').text(`${data.invoice_number} | EIS Unique ID: ${data.eis_unique_id}`);
+            $('#casJsonCode').text(data.cas_json);
+            const m = new bootstrap.Modal(document.getElementById('casJsonModal'));
+            m.show();
+        } else {
+            Swal.fire('Error', data.error || 'Failed to load CAS JSON', 'error');
+        }
+    })
+    .catch(err => {
+        Swal.close();
+        Swal.fire('Error', err.message, 'error');
+    });
+}
+
+function copyCasJsonModal() {
+    if (!currentCasJsonStr) return;
+    navigator.clipboard.writeText(currentCasJsonStr).then(() => {
+        Swal.fire({
+            icon: 'success',
+            title: 'Copied!',
+            text: 'BIR CAS JSON payload copied to clipboard.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    });
+}
+
+function transmitSelectedToEis() {
+    const ids = Array.from(selectedInvoices.keys());
+    if (!ids.length) {
+        Swal.fire('No Selection', 'Please select at least one invoice to transmit to BIR EIS.', 'warning');
+        return;
+    }
+
+    if (ids.length > 100) {
+        Swal.fire('Batch Limit Exceeded', 'BIR EIS limits a single transmission batch to maximum 100 invoices. Please select 100 or fewer.', 'warning');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Transmit to BIR EIS Gateway?',
+        html: `You are about to digitally sign (JWS RS256) and AES-256 encrypt <b>${ids.length} invoice(s)</b> and transmit them to the BIR EIS Gateway.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: '<i class="fa-solid fa-cloud-arrow-up me-1"></i> Yes, Transmit Batch'
+    }).then(res => {
+        if (!res.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Transmitting to BIR EIS...',
+            text: 'Signing JWS, encrypting AES payload, and negotiating with BIR Gateway. Please wait...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch(window.BASE_URL + 'api/eis_transmit.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ invoice_ids: ids })
+        })
+        .then(r => r.json())
+        .then(data => {
+            Swal.close();
+            if (data.success) {
+                clearSelection();
+                loadHistory(currentPage);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Transmission Acknowledged!',
+                    html: `
+                        <p class="mb-2"><b>${data.invoicesCount} invoice(s)</b> successfully accepted by BIR EIS.</p>
+                        <div class="p-2 rounded bg-light border text-start font-mono small mb-2" style="font-size:0.78rem;">
+                            <div><strong>Submit ID:</strong> ${escapeHtml(data.submitId)}</div>
+                            <div><strong>BIR Ack ID:</strong> ${escapeHtml(data.ackId)}</div>
+                            <div><strong>Time:</strong> ${escapeHtml(data.responseDtm)}</div>
+                        </div>
+                        <p class="small text-muted mb-0">${escapeHtml(data.description)}</p>
+                    `,
+                    confirmButtonColor: '#15803d',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Transmission Failed',
+                    html: `<div class="text-danger small">${escapeHtml(data.error || 'Failed to transmit')}</div>`,
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        })
+        .catch(err => {
+            Swal.close();
+            Swal.fire('Network Error', err.message, 'error');
+        });
+    });
+}
+
+function syncBirEisStatus() {
+    Swal.fire({
+        title: 'Syncing BIR EIS Status...',
+        text: 'Checking verification results from BIR Gateway for transmitted batches...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    fetch(window.BASE_URL + 'api/eis_inquire.php?sync_all=1')
+    .then(r => r.json())
+    .then(data => {
+        Swal.close();
+        if (data.success) {
+            loadHistory(currentPage);
+            Swal.fire({
+                icon: 'success',
+                title: 'Sync Completed',
+                text: data.message || `Checked ${data.synced_count} batch transmission(s). Statuses updated.`,
+                timer: 2500,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire('Inquiry Error', data.error || 'Failed to query BIR EIS', 'error');
+        }
+    })
+    .catch(err => {
+        Swal.close();
+        Swal.fire('Network Error', err.message, 'error');
+    });
 }
 
 // Batch ZIP Download of Selected Invoices

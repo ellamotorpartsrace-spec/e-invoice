@@ -33,25 +33,37 @@ $settings = getEinvSettings($conn);
             <div class="p-4">
                 <form id="settingsForm" onsubmit="saveSettings(event)">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-7">
+                        <div class="col-md-5">
                             <label class="form-label small fw-bold text-secondary">Registered Business Name (as on BIR 2303)</label>
                             <input type="text" class="form-control" name="store_name" value="<?= htmlspecialchars($settings['store_name'] ?? 'DEMO E-COMMERCE ENTERPRISES') ?>" required>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-3">
                             <label class="form-label small fw-bold text-secondary">VAT Status</label>
                             <select class="form-select" name="vat_status">
                                 <option value="VAT Registered" <?= ($settings['vat_status'] ?? '') === 'VAT Registered' ? 'selected' : '' ?>>VAT Registered (12% VAT)</option>
                                 <option value="Non-VAT Registered" <?= ($settings['vat_status'] ?? '') === 'Non-VAT Registered' ? 'selected' : '' ?>>Non-VAT Registered</option>
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary">BIR Seller Type (Ver. 2.3)</label>
+                            <select class="form-select" name="seller_type">
+                                <option value="0" <?= ($settings['seller_type'] ?? '0') === '0' ? 'selected' : '' ?>>0 : VAT Registered</option>
+                                <option value="1" <?= ($settings['seller_type'] ?? '') === '1' ? 'selected' : '' ?>>1 : Non-VAT Registered</option>
+                                <option value="2" <?= ($settings['seller_type'] ?? '') === '2' ? 'selected' : '' ?>>2 : Registered Business Enterprise (RBE)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold text-secondary">Taxpayer Identification Number (TIN + Branch)</label>
                             <input type="text" class="form-control font-mono" name="store_tin" value="<?= htmlspecialchars($settings['store_tin'] ?? '123-456-789-00000') ?>" placeholder="123-456-789-00000" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary">Store Official Email (for EIS)</label>
+                            <input type="email" class="form-control" name="store_email" value="<?= htmlspecialchars($settings['store_email'] ?? 'taxpayer@example.com') ?>" placeholder="taxpayer@example.com" required>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold text-secondary">Store Contact Number</label>
                             <input type="text" class="form-control" name="store_contact" value="<?= htmlspecialchars($settings['store_contact'] ?? '(02) 8123-4567 / 0917-000-0000') ?>">
                         </div>
@@ -111,11 +123,11 @@ $settings = getEinvSettings($conn);
                     <!-- BIR EIS Gateway & Sandbox Settings -->
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                         <div>
-                            <h6 class="fw-bold mb-1 fs-6"><i class="fa-solid fa-server text-danger me-2"></i>BIR EIS Gateway & Sandbox Certification</h6>
-                            <p class="text-secondary small mb-0">Direct API integration with BIR EIS under RR 8-2022 & RR 9-2022 standards.</p>
+                            <h6 class="fw-bold mb-1 fs-6"><i class="fa-solid fa-server text-danger me-2"></i>BIR EIS Gateway & Sandbox Configuration</h6>
+                            <p class="text-secondary small mb-0">Direct API integration with BIR EIS under Pilot Ver. 2.3 & CAS JSON Format v2.2.</p>
                         </div>
                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1" style="font-size:0.75rem;">
-                            <i class="fa-solid fa-check-circle me-1"></i>Schema 380 Ready
+                            <i class="fa-solid fa-shield-halved me-1"></i>JWS RS256 & AES-256
                         </span>
                     </div>
 
@@ -123,7 +135,7 @@ $settings = getEinvSettings($conn);
                         <div class="d-flex gap-2">
                             <i class="fa-solid fa-circle-info text-info mt-1"></i>
                             <div class="small text-secondary">
-                                <strong>Testing for BIR Registration:</strong> Use the <strong>Sandbox Gateway</strong> (<code>https://eis-cert.bir.gov.ph</code>) during developer certification. Switch to <strong>Production</strong> (<code>https://eis.bir.gov.ph</code>) only after receiving your Certificate of Technical Compliance (CTC).
+                                <strong>BIR Developer Portal Credentials:</strong> Obtain your <strong>User ID, Application ID, Application Secret Key</strong>, and <strong>Digital Signing Key-Pair</strong> from the official EIS Certification Portal (<a href="https://eis-cert.bir.gov.ph" target="_blank" class="fw-bold text-decoration-none">eis-cert.bir.gov.ph</a>).
                             </div>
                         </div>
                     </div>
@@ -146,27 +158,51 @@ $settings = getEinvSettings($conn);
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-secondary">BIR EIS Client ID</label>
-                            <input type="text" class="form-control font-mono" name="eis_client_id" value="<?= htmlspecialchars($settings['eis_client_id'] ?? '') ?>" placeholder="e.g. 7d8f4c2e-...">
-                            <div class="form-text" style="font-size:0.72rem;">Provided upon registration at eis-cert.bir.gov.ph</div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary">EIS Cert No. (Accreditation ID)</label>
+                            <input type="text" class="form-control font-mono" name="eis_accreditation_id" value="<?= htmlspecialchars($settings['eis_accreditation_id'] ?? '20146IT4') ?>" placeholder="e.g. 20146IT4" required>
+                            <div class="form-text" style="font-size:0.72rem;">8-digit number/code (20 for CAS)</div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-secondary">BIR EIS Client Secret</label>
-                            <input type="password" class="form-control font-mono" name="eis_client_secret" value="<?= htmlspecialchars($settings['eis_client_secret'] ?? '') ?>" placeholder="••••••••••••••••">
-                            <div class="form-text" style="font-size:0.72rem;">OAuth2 confidential secret</div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary">EIS Portal User ID</label>
+                            <input type="text" class="form-control font-mono" name="eis_user_id" value="<?= htmlspecialchars($settings['eis_user_id'] ?? '') ?>" placeholder="e.g. BIRuser">
+                            <div class="form-text" style="font-size:0.72rem;">User ID on eis-cert portal</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary">EIS Portal Password</label>
+                            <input type="password" class="form-control font-mono" name="eis_password" value="<?= htmlspecialchars($settings['eis_password'] ?? '') ?>" placeholder="••••••••">
+                            <div class="form-text" style="font-size:0.72rem;">Encrypted via BIR RSA Key</div>
                         </div>
                     </div>
 
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-secondary">API Subscription Key (Ocp-Apim)</label>
-                            <input type="text" class="form-control font-mono" name="eis_api_key" value="<?= htmlspecialchars($settings['eis_api_key'] ?? '') ?>" placeholder="e.g. b8f910a72c...">
+                            <label class="form-label small fw-bold text-secondary">EIS Registered Application ID</label>
+                            <input type="text" class="form-control font-mono" name="eis_application_id" value="<?= htmlspecialchars($settings['eis_application_id'] ?? '') ?>" placeholder="e.g. 60xLDIL1">
+                            <div class="form-text" style="font-size:0.72rem;">Application ID from developer portal</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-secondary">Digital Certificate Serial No.</label>
-                            <input type="text" class="form-control font-mono" name="eis_cert_serial" value="<?= htmlspecialchars($settings['eis_cert_serial'] ?? '') ?>" placeholder="e.g. BIR-CERT-2026-001">
+                            <label class="form-label small fw-bold text-secondary">Application Secret Key (for HMAC)</label>
+                            <input type="password" class="form-control font-mono" name="eis_application_secret" value="<?= htmlspecialchars($settings['eis_application_secret'] ?? '') ?>" placeholder="••••••••••••••••">
+                            <div class="form-text" style="font-size:0.72rem;">Used for HMAC-SHA256 signature</div>
                         </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label small fw-bold text-secondary">Digital Signing Key-Pair ID (`kid`)</label>
+                            <input type="text" class="form-control font-mono" name="eis_jws_key_id" value="<?= htmlspecialchars($settings['eis_jws_key_id'] ?? '6VdQnBkKzC') ?>" placeholder="e.g. 6VdQnBkKzC">
+                            <div class="form-text" style="font-size:0.72rem;">Generated in EIS Certification application settings</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold text-secondary mb-0">Taxpayer Digital Signing Private Key (RSA PEM for JWS)</label>
+                            <span class="badge bg-secondary-subtle text-secondary font-mono" style="font-size:0.7rem;">Confidential</span>
+                        </div>
+                        <textarea class="form-control font-mono small" name="eis_private_key" rows="4" placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...&#10;-----END PRIVATE KEY-----" style="font-size:0.78rem;"><?= htmlspecialchars($settings['eis_private_key'] ?? '') ?></textarea>
+                        <div class="form-text" style="font-size:0.72rem;">Used locally by PHP OpenSSL to digitally sign each invoice via JWS RS256 prior to AES encryption.</div>
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">

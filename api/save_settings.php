@@ -50,10 +50,14 @@ try {
     }
 
     $allowedKeys = [
-        'store_name', 'store_tin', 'store_address', 'store_contact',
-        'vat_status', 'invoice_prefix', 'invoice_prefix_shopee', 'invoice_prefix_lazada', 'invoice_prefix_tiktok',
+        'store_name', 'store_tin', 'store_address', 'store_contact', 'store_email', 'store_tagline',
+        'vat_status', 'seller_type',
+        'invoice_prefix', 'invoice_prefix_shopee', 'invoice_prefix_lazada', 'invoice_prefix_tiktok',
         'permit_no', 'atp_no', 'approved_series',
-        'eis_enabled', 'eis_env', 'eis_client_id', 'eis_client_secret', 'eis_api_key', 'eis_cert_serial',
+        'eis_enabled', 'eis_env',
+        'eis_user_id', 'eis_password', 'eis_accreditation_id', 'eis_application_id', 'eis_application_secret',
+        'eis_jws_key_id', 'eis_private_key',
+        'eis_client_id', 'eis_client_secret', 'eis_api_key', 'eis_cert_serial',
         'signatory_name', 'signatory_designation', 'signature_image'
     ];
 
